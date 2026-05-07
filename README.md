@@ -1,9 +1,5 @@
 # PlainVault
 
-<p align="center">
-  <img src="public/logo.png" alt="PlainVault" width="48" />
-</p>
-
 > Store secrets, configs, and secure team notes — without the complexity.
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org)
@@ -15,6 +11,9 @@
 
 ## What is PlainVault?
 
+<p align="center">
+  <img src="public/logo.png" alt="PlainVault" width="200" />
+</p>
 PlainVault is a clean internal vault for teams to store and share sensitive information — credentials, API keys, environment configs, and secure notes — in one organized, audited place.
 
 **Use cases:**
@@ -35,28 +34,32 @@ All file content is encrypted with **AES-256-GCM** before being stored. Each fil
 
 ### Role-Based Access Control
 
-| Feature | ADMIN | DEVELOPER | VIEWER |
-|---|:-:|:-:|:-:|
-| View raw content | ✓ | ✓ | — |
-| View masked content | ✓ | ✓ | ✓ |
-| Create / edit files | ✓ | ✓ | — |
-| Delete files | ✓ | — | — |
-| Manage categories | ✓ | — | — |
-| Approve / reject users | ✓ | — | — |
-| Create / revoke API keys | ✓ | — | — |
-| View audit logs | ✓ | — | — |
-| View revision history | ✓ | ✓ | — |
+| Feature                  | ADMIN | DEVELOPER | VIEWER |
+| ------------------------ | :---: | :-------: | :----: |
+| View raw content         |   ✓   |     ✓     |   —    |
+| View masked content      |   ✓   |     ✓     |   ✓    |
+| Create / edit files      |   ✓   |     ✓     |   —    |
+| Delete files             |   ✓   |     —     |   —    |
+| Manage categories        |   ✓   |     —     |   —    |
+| Approve / reject users   |   ✓   |     —     |   —    |
+| Create / revoke API keys |   ✓   |     —     |   —    |
+| View audit logs          |   ✓   |     —     |   —    |
+| View revision history    |   ✓   |     ✓     |   —    |
 
 ### Version History
+
 Every file edit creates a revision. Browse past versions, compare diffs, and restore previous content.
 
 ### Categories
+
 Organize files by environment, service, or team with color-coded labels.
 
 ### Audit Trail
+
 Every action — file access, creation, modification, login — is logged for compliance and security reviews.
 
 ### API Keys
+
 Programmatic access to files via bearer token authentication for CI/CD pipelines and integrations.
 
 ```bash
@@ -80,13 +83,13 @@ plainvault/
 
 ### Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Framework | Next.js 16 (App Router) |
-| Language | TypeScript |
-| Database | SQLite via Prisma |
+| Layer      | Technology                     |
+| ---------- | ------------------------------ |
+| Framework  | Next.js 16 (App Router)        |
+| Language   | TypeScript                     |
+| Database   | SQLite via Prisma              |
 | Encryption | Node.js `crypto` (AES-256-GCM) |
-| Testing | Vitest + Playwright |
+| Testing    | Vitest + Playwright            |
 
 ---
 
