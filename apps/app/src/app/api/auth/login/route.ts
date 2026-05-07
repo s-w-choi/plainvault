@@ -1,117 +1,126 @@
-import { NextRequest, NextResponse } from 'next/server';
-import argon2 from 'argon2';
-import { PrismaClient } from '@prisma/client';
-import { createAuditLog } from '@/lib/audit/audit-log';
-
-const prisma = new PrismaClient();
+import argon2 from "argon2";
+import { type NextRequest, NextResponse } from "next/server";
+import { createAuditLog } from "@/lib/audit/audit-log";
+import { setSessionCookie } from "@/lib/auth/auth";
+import { prisma } from "@/lib/db";
+import { checkRateLimit, getClientIpKey } from "@/lib/security/rate-limit";
 
 export async function POST(request: NextRequest) {
-  try {
-    const { email, password } = await request.json();
-    const ip = request.headers.get('x-forwarded-for') || undefined;
-    const userAgent = request.headers.get('user-agent') || undefined;
+	try {
+		const clientIp = getClientIpKey(request.headers.get("x-forwarded-for"));
+		const rateLimitResult = checkRateLimit(`login:${clientIp}`);
+		if (!rateLimitResult.allowed) {
+			return NextResponse.json(
+				{
+					error: {
+						code: "RATE_LIMITED",
+						message: "Too many login attempts. Please try again later.",
+					},
+				},
+				{
+					status: 429,
+					headers: {
+						"Retry-After": String(
+							Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000),
+						),
+					},
+				},
+			);
+		}
 
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: { code: 'VALIDATION_ERROR', message: 'Email and password are required' } },
-        { status: 400 }
-      );
-    }
+		const { email, password } = await request.json();
+		const ip = request.headers.get("x-forwarded-for") || undefined;
+		const userAgent = request.headers.get("user-agent") || undefined;
 
-    const user = await prisma.user.findUnique({ where: { email } });
+		if (!email || !password) {
+			return NextResponse.json(
+				{
+					error: {
+						code: "VALIDATION_ERROR",
+						message: "Email and password are required",
+					},
+				},
+				{ status: 400 },
+			);
+		}
 
-    if (!user) {
-      await createAuditLog({
-        eventType: 'auth.login.failed',
-        actorType: 'USER',
-        ipAddress: ip,
-        userAgent,
-        metadata: { email },
-        success: false,
-        failureReason: 'USER_NOT_FOUND',
-      });
-      return NextResponse.json(
-        { error: { code: 'UNAUTHORIZED', message: 'Invalid credentials' } },
-        { status: 401 }
-      );
-    }
+		const user = await prisma.user.findUnique({ where: { email } });
 
-    if (user.status !== 'APPROVED') {
-      await createAuditLog({
-        eventType: 'auth.login.failed',
-        actorType: 'USER',
-        actorId: user.id,
-        ipAddress: ip,
-        userAgent,
-        metadata: { email },
-        success: false,
-        failureReason: 'ACCOUNT_NOT_APPROVED',
-      });
-      return NextResponse.json(
-        { error: { code: 'UNAUTHORIZED', message: 'Account not approved' } },
-        { status: 401 }
-      );
-    }
+		if (!user) {
+			await createAuditLog({
+				eventType: "auth.login.failed",
+				actorType: "USER",
+				ipAddress: ip,
+				userAgent,
+				metadata: { email },
+				success: false,
+				failureReason: "USER_NOT_FOUND",
+			});
+			return NextResponse.json(
+				{ error: { code: "UNAUTHORIZED", message: "Invalid credentials" } },
+				{ status: 401 },
+			);
+		}
 
-    const valid = await argon2.verify(user.passwordHash, password);
+		if (user.status !== "APPROVED") {
+			await createAuditLog({
+				eventType: "auth.login.failed",
+				actorType: "USER",
+				actorId: user.id,
+				ipAddress: ip,
+				userAgent,
+				metadata: { email },
+				success: false,
+				failureReason: "ACCOUNT_NOT_APPROVED",
+			});
+			return NextResponse.json(
+				{ error: { code: "UNAUTHORIZED", message: "Account not approved" } },
+				{ status: 401 },
+			);
+		}
 
-    if (!valid) {
-      await createAuditLog({
-        eventType: 'auth.login.failed',
-        actorType: 'USER',
-        actorId: user.id,
-        ipAddress: ip,
-        userAgent,
-        metadata: { email },
-        success: false,
-        failureReason: 'INVALID_PASSWORD',
-      });
-      return NextResponse.json(
-        { error: { code: 'UNAUTHORIZED', message: 'Invalid credentials' } },
-        { status: 401 }
-      );
-    }
+		const valid = await argon2.verify(user.passwordHash, password);
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() },
-    });
+		if (!valid) {
+			await createAuditLog({
+				eventType: "auth.login.failed",
+				actorType: "USER",
+				actorId: user.id,
+				ipAddress: ip,
+				userAgent,
+				metadata: { email },
+				success: false,
+				failureReason: "INVALID_PASSWORD",
+			});
+			return NextResponse.json(
+				{ error: { code: "UNAUTHORIZED", message: "Invalid credentials" } },
+				{ status: 401 },
+			);
+		}
 
-    await createAuditLog({
-      eventType: 'auth.login.success',
-      actorType: 'USER',
-      actorId: user.id,
-      ipAddress: ip,
-      userAgent,
-      metadata: { email },
-    });
+		await prisma.user.update({
+			where: { id: user.id },
+			data: { lastLoginAt: new Date() },
+		});
 
-    const response = NextResponse.json({ message: 'Login successful' });
-    response.cookies.set('session_user_id', user.id, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7,
-    });
-    response.cookies.set('session_role', user.role, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7,
-    });
-    response.cookies.set('session_status', user.status, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7,
-    });
+		await createAuditLog({
+			eventType: "auth.login.success",
+			actorType: "USER",
+			actorId: user.id,
+			ipAddress: ip,
+			userAgent,
+			metadata: { email },
+		});
 
-    return response;
-  } catch (error) {
-    console.error('Login error:', error);
-    return NextResponse.json(
-      { error: { code: 'INTERNAL_ERROR', message: 'An error occurred' } },
-      { status: 500 }
-    );
-  }
+		await setSessionCookie(user.id);
+		const response = NextResponse.json({ message: "Login successful" });
+
+		return response;
+	} catch (error) {
+		console.error("Login error:", error);
+		return NextResponse.json(
+			{ error: { code: "INTERNAL_ERROR", message: "An error occurred" } },
+			{ status: 500 },
+		);
+	}
 }

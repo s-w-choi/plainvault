@@ -1,9 +1,7 @@
-import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth/auth";
-import { PrismaClient } from '@prisma/client';
 import argon2 from "argon2";
-
-const prisma = new PrismaClient();
+import { NextResponse } from "next/server";
+import { destroyAllUserSessions, getSession, setSessionCookie } from "@/lib/auth/auth";
+import { prisma } from '@/lib/db';
 
 export async function PATCH(request: Request) {
   const session = await getSession();
@@ -52,6 +50,9 @@ export async function PATCH(request: Request) {
       where: { id: user.id },
       data: { passwordHash: newHash },
     });
+
+    await destroyAllUserSessions(user.id);
+    await setSessionCookie(user.id);
 
     return NextResponse.json({ message: "Password updated successfully" });
   } catch (err) {

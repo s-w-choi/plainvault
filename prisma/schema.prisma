@@ -23,6 +23,7 @@ model User {
   revisions       FileRevision[]
   apiKeys         ApiKey[]      @relation("ApiKeyCreator")
   revokedApiKeys  ApiKey[]      @relation("ApiKeyRevoker")
+  sessions        Session[]
 
   @@index([email])
   @@index([status])
@@ -117,4 +118,18 @@ model ApiKey {
 
   @@index([keyHash])
   @@index([status])
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tokenHash])
+  @@index([userId])
+  @@index([expiresAt])
 }
