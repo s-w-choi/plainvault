@@ -4,11 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function LoginPage() {
+  const t = useTranslations("auth");
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,9 +33,9 @@ export default function LoginPage() {
 
       if (!res.ok) {
         if (data.error?.code === "UNAUTHORIZED" && data.error?.message === "Account not approved") {
-          setError("Your account is pending approval. Please wait for an administrator to approve your registration.");
+          setError(t("pendingApprovalLogin"));
         } else {
-          setError(data.error?.message || "Login failed");
+          setError(data.error?.message || t("loginFailed"));
         }
         return;
       }
@@ -41,7 +43,7 @@ export default function LoginPage() {
       router.push("/dashboard");
       router.refresh();
     } catch {
-      setError("An unexpected error occurred");
+      setError(t("unexpectedError"));
     } finally {
       setLoading(false);
     }
@@ -56,8 +58,8 @@ export default function LoginPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Sign in</CardTitle>
-            <CardDescription>Enter your credentials to continue</CardDescription>
+            <CardTitle>{t("signIn")}</CardTitle>
+            <CardDescription>{t("enterCredentials")}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -69,12 +71,12 @@ export default function LoginPage() {
 
               <div className="space-y-1.5">
                 <label htmlFor="email" className="text-sm font-medium text-gray-700">
-                  Email
+                  {t("email")}
                 </label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="you@example.com"
+                  placeholder={t("emailPlaceholder")}
                   value={email}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
                   required
@@ -85,12 +87,12 @@ export default function LoginPage() {
 
               <div className="space-y-1.5">
                 <label htmlFor="password" className="text-sm font-medium text-gray-700">
-                  Password
+                  {t("password")}
                 </label>
                 <Input
                   id="password"
                   type="password"
-                  placeholder="Enter your password"
+                  placeholder={t("passwordPlaceholder")}
                   value={password}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
                   required
@@ -100,14 +102,14 @@ export default function LoginPage() {
               </div>
 
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Signing in..." : "Sign in"}
+                {loading ? t("signingIn") : t("signIn")}
               </Button>
             </form>
 
             <div className="mt-4 text-center text-sm text-gray-500">
-              Don&apos;t have an account?{" "}
+              {t("noAccount")}{" "}
               <Link href="/register" className="text-indigo-600 hover:text-indigo-700 hover:underline">
-                Register
+                {t("register")}
               </Link>
             </div>
           </CardContent>

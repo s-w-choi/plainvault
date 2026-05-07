@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AppHeader } from "@/components/app-header";
@@ -34,6 +35,9 @@ interface UserInfo {
 }
 
 export default function DashboardPage() {
+  const t = useTranslations("dashboard");
+  const tCommon = useTranslations("common");
+  const tNav = useTranslations("nav");
   const router = useRouter();
   const [user, setUser] = useState<UserInfo | null>(null);
   const [allFiles, setAllFiles] = useState<FileSummary[]>([]);
@@ -94,7 +98,7 @@ export default function DashboardPage() {
 
   async function handleSave() {
     if (!formData.title || !formData.actualFileName) {
-      setError("Title and file name are required");
+      setError(t("titleAndFileNameRequired"));
       return;
     }
     setSaving(true);
@@ -115,19 +119,19 @@ export default function DashboardPage() {
       setAllFiles(data.files || []);
       setTotalCount(data.files?.length || 0);
     } else {
-      let errorMsg = "Failed to create file";
+      let errorMsg = t("failedCreateFile");
       try {
         const data = await res.json();
         errorMsg = data.error?.message || errorMsg;
       } catch {
-        errorMsg = `Server error: ${res.status}`;
+        errorMsg = t("serverError", { status: res.status });
       }
       setError(errorMsg);
     }
   }
 
   async function handleDelete(fileId: string, fileTitle: string) {
-    if (!confirm(`Delete "${fileTitle}"?`)) return;
+    if (!confirm(t("deleteConfirm", { title: fileTitle }))) return;
     setDeletingId(fileId);
     const res = await fetch(`/api/files/${fileId}`, { method: "DELETE" });
     setDeletingId(null);
@@ -140,7 +144,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <p className="text-gray-500 text-sm">Loading...</p>
+        <p className="text-gray-500 text-sm">{tCommon("loading")}</p>
       </div>
     );
   }
@@ -154,9 +158,9 @@ export default function DashboardPage() {
       <main className="max-w-6xl mx-auto px-6 py-8">
         {/* Welcome */}
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">{t("title")}</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Welcome back, {user.name}
+            {t("welcomeBack", { name: user.name })}
           </p>
         </div>
 
@@ -164,20 +168,20 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 gap-4 mb-8 sm:grid-cols-3">
           <Card>
             <CardContent className="pt-6 pb-6">
-              <p className="text-sm font-medium text-gray-500">Total Files</p>
+              <p className="text-sm font-medium text-gray-500">{t("totalFiles")}</p>
               <p className="mt-2 text-3xl font-semibold text-gray-900">{totalCount}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6 pb-6">
-              <p className="text-sm font-medium text-gray-500">Your Role</p>
+              <p className="text-sm font-medium text-gray-500">{t("yourRole")}</p>
               <p className="mt-2 text-3xl font-semibold text-gray-900 capitalize">{user.role.toLowerCase()}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6 pb-6">
-              <p className="text-sm font-medium text-gray-500">Status</p>
-              <p className="mt-2 text-3xl font-semibold text-gray-900">Active</p>
+              <p className="text-sm font-medium text-gray-500">{t("status")}</p>
+              <p className="mt-2 text-3xl font-semibold text-gray-900">{t("active")}</p>
             </CardContent>
           </Card>
         </div>
@@ -187,19 +191,19 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 gap-4 mb-8 sm:grid-cols-2">
             <Card className="hover:border-gray-300 transition-colors">
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Administration</CardTitle>
+                <CardTitle className="text-base">{t("administration")}</CardTitle>
               </CardHeader>
               <CardContent className="pt-0 flex flex-col gap-3">
-                <p className="text-sm text-gray-500">Manage users, API keys, and audit logs</p>
+                <p className="text-sm text-gray-500">{t("manageDescription")}</p>
                 <div className="flex flex-wrap gap-2">
                   <Link href="/admin/users">
-                    <Button variant="outline" size="sm">Users</Button>
+                    <Button variant="outline" size="sm">{tNav("users")}</Button>
                   </Link>
                   <Link href="/admin/api-keys">
-                    <Button variant="outline" size="sm">API Keys</Button>
+                    <Button variant="outline" size="sm">{tNav("apiKeys")}</Button>
                   </Link>
                   <Link href="/admin/audit-logs">
-                    <Button variant="outline" size="sm">Audit Logs</Button>
+                    <Button variant="outline" size="sm">{tNav("auditLogs")}</Button>
                   </Link>
                 </div>
               </CardContent>
@@ -212,18 +216,18 @@ export default function DashboardPage() {
           <Card className="mb-8">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Recent Files</CardTitle>
+                <CardTitle className="text-base">{t("recentFiles")}</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="pt-0 p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>File Name</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Updated By</TableHead>
-                    <TableHead>Updated At (KST)</TableHead>
+                    <TableHead>{t("titleField")}</TableHead>
+                    <TableHead>{t("fileName")}</TableHead>
+                    <TableHead>{tCommon("type")}</TableHead>
+                    <TableHead>{t("updatedBy")}</TableHead>
+                    <TableHead>{t("updatedAt")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -252,25 +256,26 @@ export default function DashboardPage() {
         {showForm && canCreate && (
           <Card className="mb-6">
             <CardContent className="p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Create New File</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t("createNewFile")}</h2>
               {error && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">{error}</div>
               )}
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                    <Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} placeholder="My Configuration" />
+                    <label htmlFor="new-file-title" className="block text-sm font-medium text-gray-700 mb-1">{t("titleField")}</label>
+                    <Input id="new-file-title" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} placeholder={t("myConfigurationPlaceholder")} />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">File Name</label>
-                    <Input value={formData.actualFileName} onChange={e => setFormData({ ...formData, actualFileName: e.target.value })} placeholder=".env, config.yaml" />
+                    <label htmlFor="new-file-name" className="block text-sm font-medium text-gray-700 mb-1">{t("fileName")}</label>
+                    <Input id="new-file-name" value={formData.actualFileName} onChange={e => setFormData({ ...formData, actualFileName: e.target.value })} placeholder={t("fileNamePlaceholder")} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Content Type</label>
+                    <label htmlFor="new-file-content-type" className="block text-sm font-medium text-gray-700 mb-1">{t("contentType")}</label>
                     <select
+                      id="new-file-content-type"
                       value={formData.contentType}
                       onChange={e => setFormData({ ...formData, contentType: e.target.value })}
                       className="flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
@@ -285,13 +290,14 @@ export default function DashboardPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                    <label htmlFor="new-file-category" className="block text-sm font-medium text-gray-700 mb-1">{t("category")}</label>
                     <select
+                      id="new-file-category"
                       value={formData.categoryId}
                       onChange={e => setFormData({ ...formData, categoryId: e.target.value })}
                       className="flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
                     >
-                      <option value="">No category</option>
+                      <option value="">{t("noCategory")}</option>
                       {categories.map(c => (
                         <option key={c.id} value={c.id}>{c.name}</option>
                       ))}
@@ -299,18 +305,19 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
+                  <label htmlFor="new-file-content" className="block text-sm font-medium text-gray-700 mb-1">{t("content")}</label>
                   <Textarea
+                    id="new-file-content"
                     value={formData.content}
                     onChange={e => setFormData({ ...formData, content: e.target.value })}
-                    placeholder="Enter file content..."
+                    placeholder={t("contentPlaceholder")}
                     rows={10}
                     className="font-mono text-sm"
                   />
                 </div>
                 <div className="flex items-center gap-3 pt-2">
-                  <Button onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
-                  <Button variant="outline" onClick={() => { setShowForm(false); setError(null); setFormData({ title: "", actualFileName: "", contentType: "text", content: "", categoryId: "" }); }}>Cancel</Button>
+                  <Button onClick={handleSave} disabled={saving}>{saving ? tCommon("saving") : tCommon("save")}</Button>
+                  <Button variant="outline" onClick={() => { setShowForm(false); setError(null); setFormData({ title: "", actualFileName: "", contentType: "text", content: "", categoryId: "" }); }}>{tCommon("cancel")}</Button>
                 </div>
               </div>
             </CardContent>
@@ -321,9 +328,9 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base">All Files ({filteredFiles.length})</CardTitle>
+              <CardTitle className="text-base">{t("allFiles", { count: filteredFiles.length })}</CardTitle>
               {canCreate && !showForm && (
-                <Button onClick={() => setShowForm(true)} size="sm" aria-label="Create new file">New File</Button>
+                <Button onClick={() => setShowForm(true)} size="sm" aria-label={t("createNewFileAria")}>{t("newFile")}</Button>
               )}
             </div>
           </CardHeader>
@@ -331,27 +338,29 @@ export default function DashboardPage() {
           {/* Search & Filter */}
           <div className="px-6 pb-3 flex flex-wrap items-center gap-3">
             <Input
-              placeholder="Search files..."
-              aria-label="Search files"
+              placeholder={t("searchFiles")}
+              aria-label={t("searchFiles")}
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="max-w-xs"
             />
             <div className="flex flex-wrap items-center gap-2">
               <button
+                type="button"
                 onClick={() => setSelectedCategory("")}
                 aria-pressed={!selectedCategory}
-                aria-label="Show all categories"
+                aria-label={t("showAllCategories")}
                 className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors ${!selectedCategory ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
               >
-                All
+                {tCommon("all")}
               </button>
               {categories.map(cat => (
                 <button
+                  type="button"
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
                   aria-pressed={selectedCategory === cat.id}
-                  aria-label={`Filter by ${cat.name}`}
+                  aria-label={t("filterBy", { name: cat.name })}
                   className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                     selectedCategory === cat.id
                       ? "text-white"
@@ -369,19 +378,19 @@ export default function DashboardPage() {
           <CardContent className="pt-0 p-0">
             {filteredFiles.length === 0 ? (
               <div className="px-6 py-12 text-center text-gray-500">
-                <p>No files found.</p>
-                {canCreate && <p className="mt-1 text-sm">Click &quot;New File&quot; to create one.</p>}
+                <p>{t("noFiles")}</p>
+                {canCreate && <p className="mt-1 text-sm">{t("clickNewFile")}</p>}
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>File Name</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Updated By</TableHead>
-                    <TableHead>Updated At (KST)</TableHead>
+                    <TableHead>{t("titleField")}</TableHead>
+                    <TableHead>{t("fileName")}</TableHead>
+                    <TableHead>{t("category")}</TableHead>
+                    <TableHead>{tCommon("type")}</TableHead>
+                    <TableHead>{t("updatedBy")}</TableHead>
+                    <TableHead>{t("updatedAt")}</TableHead>
                     {isAdmin && <TableHead></TableHead>}
                   </TableRow>
                 </TableHeader>
@@ -415,12 +424,12 @@ export default function DashboardPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            aria-label={`Delete ${file.title}`}
+                            aria-label={t("deleteConfirm", { title: file.title })}
                             onClick={() => handleDelete(file.id, file.title)}
                             disabled={deletingId === file.id}
                             className="text-red-500 hover:text-red-700"
                           >
-                            {deletingId === file.id ? "..." : "Delete"}
+                            {deletingId === file.id ? "..." : tCommon("delete")}
                           </Button>
                         </TableCell>
                       )}

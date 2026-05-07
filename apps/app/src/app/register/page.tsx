@@ -4,11 +4,13 @@ import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 function RegisterForm() {
+  const t = useTranslations("auth");
   const router = useRouter();
   const searchParams = useSearchParams();
   const [name, setName] = useState("");
@@ -35,7 +37,7 @@ function RegisterForm() {
     setLoading(true);
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match");
+      setError(t("passwordMismatch"));
       setLoading(false);
       return;
     }
@@ -50,14 +52,14 @@ function RegisterForm() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error?.message || "Registration failed");
+        setError(data.error?.message || t("registrationFailed"));
         return;
       }
 
       router.push("/register?registered=1");
       router.refresh();
     } catch {
-      setError("An unexpected error occurred");
+      setError(t("unexpectedError"));
     } finally {
       setLoading(false);
     }
@@ -66,19 +68,19 @@ function RegisterForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Create account</CardTitle>
-        <CardDescription>Fill in your details to register</CardDescription>
+        <CardTitle>{t("createAccount")}</CardTitle>
+        <CardDescription>{t("registerDescription")}</CardDescription>
       </CardHeader>
       <CardContent>
         {registered ? (
           <div className="space-y-4">
             <div className="rounded-md border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
-              <p className="font-medium">Waiting for approval...</p>
-              <p className="mt-1">Your registration request has been submitted. An administrator will review and approve your account. You will receive an email once approved (this may take a while).</p>
+              <p className="font-medium">{t("waitingApproval")}</p>
+              <p className="mt-1">{t("registrationSubmitted")}</p>
             </div>
             <div className="text-center text-sm text-gray-500">
               <Link href="/login" className="text-indigo-600 hover:text-indigo-700 hover:underline">
-                Go to login now
+                {t("goToLoginNow")}
               </Link>
             </div>
           </div>
@@ -92,12 +94,12 @@ function RegisterForm() {
 
             <div className="space-y-1.5">
               <label htmlFor="name" className="text-sm font-medium text-gray-700">
-                Name
+                {t("name")}
               </label>
               <Input
                 id="name"
                 type="text"
-                placeholder="Your full name"
+                placeholder={t("namePlaceholder")}
                 value={name}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                 required
@@ -108,12 +110,12 @@ function RegisterForm() {
 
             <div className="space-y-1.5">
               <label htmlFor="email" className="text-sm font-medium text-gray-700">
-                Email
+                {t("email")}
               </label>
               <Input
                 id="email"
                 type="email"
-                placeholder="you@example.com"
+                placeholder={t("emailPlaceholder")}
                 value={email}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
                 required
@@ -124,12 +126,12 @@ function RegisterForm() {
 
             <div className="space-y-1.5">
               <label htmlFor="password" className="text-sm font-medium text-gray-700">
-                Password
+                {t("password")}
               </label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Enter your password"
+                placeholder={t("passwordPlaceholder")}
                 value={password}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
                 required
@@ -138,19 +140,19 @@ function RegisterForm() {
               />
               {password && (
                 <p className={`text-xs ${password === confirmPassword ? "text-green-600" : "text-red-500"}`}>
-                  {password === confirmPassword ? "✓ Passwords match" : "✗ Passwords do not match"}
+                  {password === confirmPassword ? t("passwordsMatch") : t("passwordsDoNotMatch")}
                 </p>
               )}
             </div>
 
             <div className="space-y-1.5">
               <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
-                Confirm Password
+                {t("confirmPassword")}
               </label>
               <Input
                 id="confirmPassword"
                 type="password"
-                placeholder="Re-enter your password"
+                placeholder={t("confirmPasswordPlaceholder")}
                 value={confirmPassword}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
                 required
@@ -160,15 +162,15 @@ function RegisterForm() {
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Creating account..." : "Create account"}
+              {loading ? t("creatingAccount") : t("createAccount")}
             </Button>
           </form>
         )}
 
         <div className="mt-4 text-center text-sm text-gray-500">
-          Already have an account?{" "}
+          {t("alreadyHaveAccount")}{" "}
           <Link href="/login" className="text-indigo-600 hover:text-indigo-700 hover:underline">
-            Sign in
+            {t("signIn")}
           </Link>
         </div>
       </CardContent>
@@ -177,6 +179,8 @@ function RegisterForm() {
 }
 
 export default function RegisterPage() {
+  const tCommon = useTranslations("common");
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
@@ -186,7 +190,7 @@ export default function RegisterPage() {
 
         <Suspense fallback={
           <Card>
-            <CardContent className="p-6 text-center text-gray-500 text-sm">Loading...</CardContent>
+            <CardContent className="p-6 text-center text-gray-500 text-sm">{tCommon("loading")}</CardContent>
           </Card>
         }>
           <RegisterForm />
