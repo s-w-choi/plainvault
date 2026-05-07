@@ -260,11 +260,11 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                    <Input value={formData.title} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, title: e.target.value })} placeholder="My Configuration" />
+                    <Input value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} placeholder="My Configuration" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">File Name</label>
-                    <Input value={formData.actualFileName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, actualFileName: e.target.value })} placeholder=".env, config.yaml" />
+                    <Input value={formData.actualFileName} onChange={e => setFormData({ ...formData, actualFileName: e.target.value })} placeholder=".env, config.yaml" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -272,7 +272,7 @@ export default function DashboardPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Content Type</label>
                     <select
                       value={formData.contentType}
-                      onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormData({ ...formData, contentType: e.target.value })}
+                      onChange={e => setFormData({ ...formData, contentType: e.target.value })}
                       className="flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
                     >
                       <option value="text">Text</option>
@@ -288,7 +288,7 @@ export default function DashboardPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
                     <select
                       value={formData.categoryId}
-                      onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormData({ ...formData, categoryId: e.target.value })}
+                      onChange={e => setFormData({ ...formData, categoryId: e.target.value })}
                       className="flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
                     >
                       <option value="">No category</option>
@@ -302,7 +302,7 @@ export default function DashboardPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
                   <Textarea
                     value={formData.content}
-                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, content: e.target.value })}
+                    onChange={e => setFormData({ ...formData, content: e.target.value })}
                     placeholder="Enter file content..."
                     rows={10}
                     className="font-mono text-sm"
@@ -323,7 +323,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">All Files ({filteredFiles.length})</CardTitle>
               {canCreate && !showForm && (
-                <Button onClick={() => setShowForm(true)} size="sm">New File</Button>
+                <Button onClick={() => setShowForm(true)} size="sm" aria-label="Create new file">New File</Button>
               )}
             </div>
           </CardHeader>
@@ -332,13 +332,16 @@ export default function DashboardPage() {
           <div className="px-6 pb-3 flex flex-wrap items-center gap-3">
             <Input
               placeholder="Search files..."
+              aria-label="Search files"
               value={search}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+              onChange={e => setSearch(e.target.value)}
               className="max-w-xs"
             />
             <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={() => setSelectedCategory("")}
+                aria-pressed={!selectedCategory}
+                aria-label="Show all categories"
                 className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors ${!selectedCategory ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
               >
                 All
@@ -347,6 +350,8 @@ export default function DashboardPage() {
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
+                  aria-pressed={selectedCategory === cat.id}
+                  aria-label={`Filter by ${cat.name}`}
                   className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                     selectedCategory === cat.id
                       ? "text-white"
@@ -354,7 +359,7 @@ export default function DashboardPage() {
                   }`}
                   style={selectedCategory === cat.id ? { backgroundColor: cat.color } : { backgroundColor: cat.color + "20", color: cat.color, border: `1px solid ${cat.color}40` }}
                 >
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: selectedCategory === cat.id ? "white" : cat.color }} />
+                  <span className="w-2 h-2 rounded-full" aria-hidden="true" style={{ backgroundColor: selectedCategory === cat.id ? "white" : cat.color }} />
                   {cat.name}
                 </button>
               ))}
@@ -410,6 +415,7 @@ export default function DashboardPage() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            aria-label={`Delete ${file.title}`}
                             onClick={() => handleDelete(file.id, file.title)}
                             disabled={deletingId === file.id}
                             className="text-red-500 hover:text-red-700"

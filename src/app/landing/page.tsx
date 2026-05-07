@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 
 const FEATURES = [
@@ -78,7 +79,7 @@ export default function LandingPage() {
       <header className="border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="PlainVault" className="h-8" />
+            <Image src="/logo.png" alt="PlainVault" width={32} height={32} className="h-8 w-auto" />
             <span className="text-lg font-semibold text-gray-900">PlainVault</span>
           </div>
           <nav className="flex items-center gap-4">
@@ -282,7 +283,7 @@ export default function LandingPage() {
       <footer className="border-t border-gray-100 py-12">
         <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="PlainVault" className="h-6" />
+            <Image src="/logo.png" alt="PlainVault" width={24} height={24} className="h-6 w-auto" />
             <span className="font-semibold text-gray-900">PlainVault</span>
           </div>
           <p className="text-sm text-gray-500">

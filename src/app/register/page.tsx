@@ -2,6 +2,7 @@
 
 import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -180,7 +181,7 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <img src="/logo.png" alt="PlainVault" className="h-12 mx-auto" />
+          <Image src="/logo.png" alt="PlainVault" width={48} height={48} className="h-12 w-auto mx-auto" />
         </div>
 
         <Suspense fallback={

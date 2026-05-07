@@ -323,7 +323,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">All Files ({filteredFiles.length})</CardTitle>
               {canCreate && !showForm && (
-                <Button onClick={() => setShowForm(true)} size="sm">New File</Button>
+                <Button onClick={() => setShowForm(true)} size="sm" aria-label="Create new file">New File</Button>
               )}
             </div>
           </CardHeader>
@@ -332,6 +332,7 @@ export default function DashboardPage() {
           <div className="px-6 pb-3 flex flex-wrap items-center gap-3">
             <Input
               placeholder="Search files..."
+              aria-label="Search files"
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="max-w-xs"
@@ -339,6 +340,8 @@ export default function DashboardPage() {
             <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={() => setSelectedCategory("")}
+                aria-pressed={!selectedCategory}
+                aria-label="Show all categories"
                 className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors ${!selectedCategory ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
               >
                 All
@@ -347,6 +350,8 @@ export default function DashboardPage() {
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
+                  aria-pressed={selectedCategory === cat.id}
+                  aria-label={`Filter by ${cat.name}`}
                   className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                     selectedCategory === cat.id
                       ? "text-white"
@@ -354,7 +359,7 @@ export default function DashboardPage() {
                   }`}
                   style={selectedCategory === cat.id ? { backgroundColor: cat.color } : { backgroundColor: cat.color + "20", color: cat.color, border: `1px solid ${cat.color}40` }}
                 >
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: selectedCategory === cat.id ? "white" : cat.color }} />
+                  <span className="w-2 h-2 rounded-full" aria-hidden="true" style={{ backgroundColor: selectedCategory === cat.id ? "white" : cat.color }} />
                   {cat.name}
                 </button>
               ))}
@@ -410,6 +415,7 @@ export default function DashboardPage() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            aria-label={`Delete ${file.title}`}
                             onClick={() => handleDelete(file.id, file.title)}
                             disabled={deletingId === file.id}
                             className="text-red-500 hover:text-red-700"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AppHeader } from "@/components/app-header";
@@ -98,7 +99,7 @@ function GettingStarted() {
   return (
     <div className="space-y-6">
       <div>
-        <img src="/docs.png" alt="Docs" className="h-20 mb-4" />
+        <Image src="/docs.png" alt="Docs" width={80} height={80} className="h-20 w-auto mb-4" />
         <h1 className="text-3xl font-bold text-gray-900">PlainVault User Guide</h1>
         <p className="mt-2 text-gray-600">
           A clean internal vault for storing secrets, configs, and secure team notes.
