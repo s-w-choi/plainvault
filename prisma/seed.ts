@@ -5,8 +5,13 @@ const prisma = new PrismaClient();
 
 async function main() {
   const adminEmail = process.env.INIT_ADMIN_EMAIL || 'admin@internal.local';
-  const adminPassword = process.env.INIT_ADMIN_PASSWORD || 'admin123';
+  const adminPassword = process.env.INIT_ADMIN_PASSWORD;
   const adminName = process.env.INIT_ADMIN_NAME || 'Admin User';
+
+  if (!adminPassword) {
+    console.error('INIT_ADMIN_PASSWORD env var is required');
+    process.exit(1);
+  }
 
   const passwordHash = await argon2.hash(adminPassword, { type: argon2.argon2id });
 
@@ -42,9 +47,6 @@ async function main() {
     });
   }
   console.log(`Seed completed. Admin: ${adminEmail}`);
-  if (process.env.NODE_ENV !== 'production') {
-    console.log(`Password: ${adminPassword} (from INIT_ADMIN_PASSWORD env)`);
-  }
 }
 
 main()
