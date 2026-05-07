@@ -25,7 +25,7 @@ PRISMA_SCHEMA := prisma/schema.prisma
 
 # --- Phony Targets -------------------------------------------------------------
 
-.PHONY: help install run migrate reset db-studio test check
+.PHONY: help install run migrate reset db-studio test check docker-landing docker-service
 
 # --- Targets -------------------------------------------------------------------
 
@@ -41,18 +41,26 @@ install:
 	$(PKG_MANAGER) db:migrate
 	@echo "==> Install complete."
 
-## Run: Start the Next.js development server
+## Run: Start all apps in parallel (web@3001 landing, app@3000 main service)
 run:
 	$(PKG_MANAGER) dev
 
-## Test: Run lint, typecheck, and tests with coverage (requires 90%+ coverage)
+## Test: Run lint, typecheck, and tests (requires 90%+ coverage)
 test:
 	@echo "==> Running lint..."
 	$(PKG_MANAGER) run lint || exit 1
 	@echo "==> Running typecheck..."
 	$(PKG_MANAGER) run typecheck || exit 1
-	@echo "==> Running tests with coverage..."
-	$(PKG_MANAGER) run test:coverage || exit 1
+	@echo "==> Running tests..."
+	$(PKG_MANAGER) run test || exit 1
+	@echo "==> Checking coverage (90% threshold)..."
+	@coverage=$$(./node_modules/.bin/vitest run --coverage 2>&1 | grep "^All files" | awk -F'|' '{gsub(/ /,"",$$2); print $$2}' | cut -d'.' -f1); \
+	if [ -n "$$coverage" ] && [ "$$coverage" -ge 90 ]; then \
+		echo "Coverage: $$coverage% (OK - >= 90%)"; \
+	else \
+		echo "Coverage: $$coverage% (FAIL - need 90%)"; \
+		exit 1; \
+	fi
 	@echo "==> All checks passed."
 
 ## Migrate: Run Prisma migrations (for CI/manual DB updates)
@@ -70,6 +78,16 @@ db-studio:
 ## Seed: Seed the database with initial data
 seed:
 	$(PKG_MANAGER) db:seed
+
+## docker-landing: Build and run landing page (web) Docker container
+docker-landing:
+	docker build -f docker/Dockerfile.web -t plainvault-web .
+	docker run -p 3001:3001 plainvault-web
+
+## docker-service: Build and run main service (app) Docker container
+docker-service:
+	docker build -f docker/Dockerfile.app -t plainvault-app .
+	docker run -p 3000:3000 plainvault-app
 
 # --- Help ----------------------------------------------------------------------
 
