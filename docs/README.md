@@ -1,36 +1,109 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Secret/Markdown Vault
 
-## Getting Started
+Internal network-only Secret and Markdown Vault for managing .env files, configuration documents, and markdown files with encrypted storage and role-based access control.
 
-First, run the development server:
+## Features
+
+- **Authentication**: Email/password login with admin approval workflow
+- **Role-Based Access Control**: Admin, Developer, Viewer roles
+- **Encrypted Storage**: File content encrypted with AES-256-GCM before DB storage
+- **Secret Masking**: Viewers see masked content (e.g., `KEY=********`)
+- **Revision History**: Full file revision tracking with diff
+- **API Keys**: Bearer token authentication for script/curl access to raw files
+- **Audit Logging**: Complete audit trail for all operations
+- **GitLab-like UI**: Calm white theme, table-centric layout
+
+## Tech Stack
+
+- **Framework**: Next.js 16 (App Router)
+- **Language**: TypeScript
+- **Database**: SQLite via Prisma ORM
+- **UI**: React + Tailwind CSS
+- **Encryption**: AES-256-GCM with PBKDF2 key derivation
+- **Password Hashing**: bcrypt
+- **Markdown Rendering**: marked + sanitize-html
+
+## Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+# Install dependencies
+pnpm install
+
+# Generate Prisma client
+pnpm prisma:generate
+
+# Run migrations
+pnpm db:migrate
+
+# Create initial admin user
+pnpm db:seed
+
+# Start development server
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Environment Variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Copy `.env.example` to `.env` and configure:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+DATABASE_URL="file:./data/vault.db"
+SESSION_SECRET="replace-with-random-session-secret-min-32-chars"
+VAULT_ENCRYPTION_KEY="replace-with-32-byte-base64-encoded-key"
+APP_BASE_URL="http://localhost:3000"
+NODE_ENV="development"
+DEFAULT_API_KEY_TTL_DAYS="90"
+MAX_FILE_CONTENT_BYTES="1048576"
+```
 
-## Learn More
+### Generating Encryption Key
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Warning**: Store this key securely. Loss means permanent data loss.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Default Users (after seed)
 
-## Deploy on Vercel
+| Email | Password | Role |
+|-------|----------|------|
+| admin@internal.local | admin123 | ADMIN |
+| developer@internal.local | dev123 | DEVELOPER |
+| viewer@internal.local | viewer123 | VIEWER |
+| pending@internal.local | viewer123 | PENDING |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Commands
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+pnpm dev          # Start dev server
+pnpm build        # Production build
+pnpm start        # Start production server
+pnpm lint         # Run ESLint
+pnpm typecheck    # Run TypeScript check
+pnpm test         # Run unit tests
+pnpm db:migrate   # Run Prisma migrations
+pnpm db:studio    # Open Prisma Studio
+pnpm db:seed      # Run seed script
+pnpm smoke        # Run smoke tests (requires dev server)
+pnpm harness      # Run integration harness
+pnpm security:check # Run security checks
+```
+
+## UI Theme
+
+- White/light gray background
+- Gray borders and muted text
+- Indigo/blue primary accent
+- Table-centric information display
+- Clear focus states
+- No gradients or flashy animations
+
+## Documentation
+
+- [ARCHITECTURE.md](ARCHITECTURE.md) - System design
+- [DEVELOPMENT.md](DEVELOPMENT.md) - Dev workflow
+- [TESTING.md](TESTING.md) - Testing guide
+- [SECURITY.md](SECURITY.md) - Security measures
+- [API.md](API.md) - API documentation
+- [AGENTS.md](AGENTS.md) - Agent workflow guide
