@@ -1,0 +1,110 @@
+import crypto from 'node:crypto';
+import { PrismaClient } from '@prisma/client';
+import { createAuditLog } from '../audit/audit-log';
+
+const prisma = new PrismaClient();
+
+const API_KEY_PREFIX = 'secvault_';
+const API_KEY_LENGTH = 32;
+
+export interface CreateApiKeyInput {
+  name: string;
+  createdById: string;
+  expiresInDays?: number;
+}
+
+export interface ApiKeyOutput {
+  id: string;
+  name: string;
+  keyPrefix: string;
+  key: string;
+  expiresAt: Date;
+  scopes: string[];
+}
+
+export async function createApiKey(input: CreateApiKeyInput): Promise<ApiKeyOutput> {
+  const key = `${API_KEY_PREFIX}${crypto.randomBytes(API_KEY_LENGTH).toString('hex')}`;
+  const keyHash = crypto.createHash('sha256').update(key).digest('hex');
+  const keyPrefix = key.substring(0, API_KEY_PREFIX.length + 8);
+
+  const expiresInDays = input.expiresInDays || 90;
+  const expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000);
+
+  const apiKey = await prisma.apiKey.create({
+    data: {
+      name: input.name,
+      keyPrefix,
+      keyHash,
+      status: 'ACTIVE',
+      createdById: input.createdById,
+      expiresAt,
+      scopesJson: JSON.stringify(['files:read_raw']),
+    },
+  });
+
+  await createAuditLog({
+    eventType: 'api_key.created',
+    actorType: 'USER',
+    actorId: input.createdById,
+    targetType: 'api_key',
+    targetId: apiKey.id,
+    metadata: { keyPrefix, name: input.name },
+  });
+
+  return {
+    id: apiKey.id,
+    name: apiKey.name,
+    keyPrefix: apiKey.keyPrefix,
+    key,
+    expiresAt: apiKey.expiresAt,
+    scopes: ['files:read_raw'],
+  };
+}
+
+export async function verifyApiKey(key: string): Promise<{ valid: boolean; apiKeyId?: string; error?: string }> {
+  const keyHash = crypto.createHash('sha256').update(key).digest('hex');
+
+  const apiKey = await prisma.apiKey.findFirst({
+    where: { keyHash },
+  });
+
+  if (!apiKey) {
+    return { valid: false, error: 'API_KEY_INVALID' };
+  }
+
+  if (apiKey.status === 'REVOKED') {
+    return { valid: false, error: 'API_KEY_REVOKED' };
+  }
+
+  if (new Date() > apiKey.expiresAt) {
+    return { valid: false, error: 'API_KEY_EXPIRED' };
+  }
+
+  return { valid: true, apiKeyId: apiKey.id };
+}
+
+export async function revokeApiKey(apiKeyId: string, revokedById: string): Promise<void> {
+  await prisma.apiKey.update({
+    where: { id: apiKeyId },
+    data: {
+      status: 'REVOKED',
+      revokedById,
+      revokedAt: new Date(),
+    },
+  });
+
+  await createAuditLog({
+    eventType: 'api_key.revoked',
+    actorType: 'USER',
+    actorId: revokedById,
+    targetType: 'api_key',
+    targetId: apiKeyId,
+  });
+}
+
+export async function updateLastUsed(apiKeyId: string): Promise<void> {
+  await prisma.apiKey.update({
+    where: { id: apiKeyId },
+    data: { lastUsedAt: new Date() },
+  });
+}
