@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("VIEWER")
+  status       String   @default("PENDING")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  lastLoginAt  DateTime?
+
+  vaultFiles       VaultFile[]  @relation("FileCreator")
+  updatedFiles    VaultFile[]   @relation("FileUpdater")
+  revisions       FileRevision[]
+  apiKeys         ApiKey[]      @relation("ApiKeyCreator")
+  revokedApiKeys  ApiKey[]      @relation("ApiKeyRevoker")
+
+  @@index([email])
+  @@index([status])
+}
+
+model Category {
+  id    String @id @default(uuid())
+  name  String @unique
+  color String @default("#6366f1")
+  files VaultFile[]
+
+  @@index([name])
+}
+
+model VaultFile {
+  id               String    @id @default(uuid())
+  title            String
+  actualFileName   String
+  encryptedContent String
+  contentSha256    String
+  contentType      String    @default("text")
+  categoryId       String?
+  createdById      String
+  updatedById      String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  category    Category?     @relation(fields: [categoryId], references: [id])
+  createdBy   User          @relation("FileCreator", fields: [createdById], references: [id])
+  updatedBy   User?         @relation("FileUpdater", fields: [updatedById], references: [id])
+  revisions   FileRevision[]
+
+  @@index([deletedAt])
+  @@index([contentType])
+}
+
+model FileRevision {
+  id                   String   @id @default(uuid())
+  fileId               String
+  revisionNumber       Int
+  encryptedContentBefore String?
+  encryptedContentAfter  String
+  contentSha256Before  String?
+  contentSha256After   String
+  changeSummary        String
+  changedById          String
+  changedAt           DateTime @default(now())
+
+  file     VaultFile @relation(fields: [fileId], references: [id])
+  changedBy User    @relation(fields: [changedById], references: [id])
+
+  @@unique([fileId, revisionNumber])
+  @@index([fileId])
+}
+
+model AuditLog {
+  id           String    @id @default(uuid())
+  eventType    String
+  actorType    String    @default("USER")
+  actorId      String?
+  targetType   String?
+  targetId     String?
+  ipAddress    String?
+  userAgent    String?
+  metadataJson String?
+  success      Boolean   @default(true)
+  failureReason String?
+  createdAt    DateTime  @default(now())
+
+  @@index([eventType])
+  @@index([actorId])
+  @@index([createdAt])
+}
+
+model ApiKey {
+  id          String    @id @default(uuid())
+  name        String
+  keyPrefix   String
+  keyHash     String
+  scopesJson  String    @default("[\"files:read_raw\"]")
+  status      String    @default("ACTIVE")
+  createdById String
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime
+  lastUsedAt  DateTime?
+  revokedById String?
+  revokedAt   DateTime?
+
+  createdBy  User @relation("ApiKeyCreator", fields: [createdById], references: [id])
+  revokedBy  User? @relation("ApiKeyRevoker", fields: [revokedById], references: [id])
+
+  @@index([keyHash])
+  @@index([status])
+}
