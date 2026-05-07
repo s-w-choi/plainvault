@@ -1,9 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { NextResponse, type NextRequest } from 'next/server';
+import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth/auth';
+import { isValidRole, isValidUserStatus } from '@/lib/auth/roles';
 import { createAuditLog } from '@/lib/audit/audit-log';
-
-const prisma = new PrismaClient();
 
 export async function PATCH(
   request: NextRequest,
@@ -29,6 +28,20 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
     const { role, status } = body;
+
+    if (role !== undefined && !isValidRole(role)) {
+      return NextResponse.json(
+        { error: { code: 'VALIDATION_ERROR', message: 'Invalid role. Must be one of: ADMIN, DEVELOPER, VIEWER' } },
+        { status: 400 }
+      );
+    }
+
+    if (status !== undefined && !isValidUserStatus(status)) {
+      return NextResponse.json(
+        { error: { code: 'VALIDATION_ERROR', message: 'Invalid status. Must be one of: PENDING, APPROVED, REJECTED' } },
+        { status: 400 }
+      );
+    }
 
     const user = await prisma.user.findUnique({ where: { id } });
     if (!user) {

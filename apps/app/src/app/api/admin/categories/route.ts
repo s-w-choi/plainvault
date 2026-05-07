@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, errorResponse } from '@/lib/auth/auth-handler';
 import { createCategory } from '@/lib/categories/category-service';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/db';
 
 export async function GET() {
   const auth = await withAuth({} as NextRequest, ['ADMIN']);
