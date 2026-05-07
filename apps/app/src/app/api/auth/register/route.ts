@@ -1,12 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server';
-import argon2 from 'argon2';
-import { PrismaClient } from '@prisma/client';
 import { createAuditLog } from '@/lib/audit/audit-log';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/db';
+import { checkRateLimit, getClientIpKey } from '@/lib/security/rate-limit';
+import argon2 from 'argon2';
+import { NextResponse, type NextRequest } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
+    const clientIp = getClientIpKey(request.headers.get('x-forwarded-for'));
+    const rateLimitResult = checkRateLimit(`register:${clientIp}`, { windowMs: 3600_000, maxAttempts: 5 });
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        { error: { code: 'RATE_LIMITED', message: 'Too many registration attempts. Please try again later.' } },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000)) },
+        }
+      );
+    }
+
     const { name, email, password } = await request.json();
 
     if (!name || !email || !password) {
