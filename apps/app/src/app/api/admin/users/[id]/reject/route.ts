@@ -1,27 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { getSession } from '@/lib/auth/auth';
+import { withAuth } from '@/lib/auth/auth-handler';
 import { createAuditLog } from '@/lib/audit/audit-log';
+import { logger } from '@/lib/logging/logger';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getSession();
-
-  if (!session?.userId) {
-    return NextResponse.json(
-      { error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } },
-      { status: 401 }
-    );
-  }
-
-  if (session.role !== 'ADMIN') {
-    return NextResponse.json(
-      { error: { code: 'FORBIDDEN', message: 'Insufficient permissions' } },
-      { status: 403 }
-    );
-  }
+  const auth = await withAuth(request, ['ADMIN']);
+  if ('response' in auth) return auth.response;
 
   try {
     const { id } = await params;
@@ -43,7 +31,7 @@ export async function POST(
     await createAuditLog({
       eventType: 'admin.user.rejected',
       actorType: 'USER',
-      actorId: session.userId,
+      actorId: auth.ctx.userId,
       targetType: 'user',
       targetId: id,
       metadata: { email: user.email },
@@ -51,7 +39,7 @@ export async function POST(
 
     return NextResponse.json({ user: updated });
   } catch (error) {
-    console.error('Reject user error:', error);
+    logger.error('Reject user error:', { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: { code: 'INTERNAL_ERROR', message: 'An error occurred' } },
       { status: 500 }

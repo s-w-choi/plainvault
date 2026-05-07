@@ -1,18 +1,13 @@
 import argon2 from "argon2";
-import { NextResponse } from "next/server";
-import { destroyAllUserSessions, getSession, setSessionCookie } from "@/lib/auth/auth";
+import { NextRequest, NextResponse } from "next/server";
+import { destroyAllUserSessions, setSessionCookie } from "@/lib/auth/auth";
+import { withAuth } from "@/lib/auth/auth-handler";
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logging/logger';
 
-export async function PATCH(request: Request) {
-  const session = await getSession();
-
-  if (!session?.userId) {
-    return NextResponse.json({ error: { message: "Unauthorized" } }, { status: 401 });
-  }
-
-  if (session.status !== 'APPROVED') {
-    return NextResponse.json({ error: { message: "Account not approved" } }, { status: 403 });
-  }
+export async function PATCH(request: NextRequest) {
+  const auth = await withAuth(request);
+  if ('response' in auth) return auth.response;
 
   try {
     const body = await request.json();
@@ -32,7 +27,7 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const user = await prisma.user.findUnique({ where: { id: session.userId } });
+    const user = await prisma.user.findUnique({ where: { id: auth.ctx.userId } });
     if (!user) {
       return NextResponse.json({ error: { message: "User not found" } }, { status: 404 });
     }
@@ -56,7 +51,7 @@ export async function PATCH(request: Request) {
 
     return NextResponse.json({ message: "Password updated successfully" });
   } catch (err) {
-    console.error("Password change error:", err);
+    logger.error("Password change error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: { message: "Internal server error" } }, { status: 500 });
   }
 }

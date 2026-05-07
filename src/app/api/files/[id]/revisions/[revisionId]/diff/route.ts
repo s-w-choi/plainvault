@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { getSession } from '@/lib/auth/auth';
+import { withAuth } from '@/lib/auth/auth-handler';
 import { decrypt } from '@/lib/crypto/encryption';
 import { computeLineDiff } from '@/lib/diff/diff';
 import { createAuditLog } from '@/lib/audit/audit-log';
@@ -9,27 +9,8 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; revisionId: string }> }
 ) {
-  const session = await getSession();
-  if (!session?.userId) {
-    return NextResponse.json(
-      { error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } },
-      { status: 401 }
-    );
-  }
-
-  if (session.status !== 'APPROVED') {
-    return NextResponse.json(
-      { error: { code: 'FORBIDDEN', message: 'Account not approved' } },
-      { status: 403 }
-    );
-  }
-
-  if (!['ADMIN', 'DEVELOPER'].includes(session.role || '')) {
-    return NextResponse.json(
-      { error: { code: 'FORBIDDEN', message: 'Insufficient permissions' } },
-      { status: 403 }
-    );
-  }
+  const auth = await withAuth(request, ['ADMIN', 'DEVELOPER']);
+  if ('response' in auth) return auth.response;
 
   const { id, revisionId } = await params;
 
@@ -64,7 +45,7 @@ export async function GET(
     await createAuditLog({
       eventType: 'file.diff_viewed',
       actorType: 'USER',
-      actorId: session.userId,
+      actorId: auth.ctx.userId,
       targetType: 'FileRevision',
       targetId: revision.id,
       ipAddress: ip,
@@ -88,7 +69,7 @@ export async function GET(
   await createAuditLog({
     eventType: 'file.diff_viewed',
     actorType: 'USER',
-    actorId: session.userId,
+    actorId: auth.ctx.userId,
     targetType: 'FileRevision',
     targetId: revision.id,
     ipAddress: ip,

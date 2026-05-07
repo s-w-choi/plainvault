@@ -4,6 +4,7 @@ import { createAuditLog } from "@/lib/audit/audit-log";
 import { setSessionCookie } from "@/lib/auth/auth";
 import { prisma } from "@/lib/db";
 import { checkRateLimit, getClientIpKey } from "@/lib/security/rate-limit";
+import { logger } from "@/lib/logging/logger";
 
 export async function POST(request: NextRequest) {
 	try {
@@ -117,7 +118,7 @@ export async function POST(request: NextRequest) {
 
 		return response;
 	} catch (error) {
-		console.error("Login error:", error);
+		logger.error("Login error:", { error: error instanceof Error ? error.message : String(error) });
 		return NextResponse.json(
 			{ error: { code: "INTERNAL_ERROR", message: "An error occurred" } },
 			{ status: 500 },

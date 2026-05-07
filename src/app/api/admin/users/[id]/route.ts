@@ -1,28 +1,16 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
-import { getSession } from '@/lib/auth/auth';
+import { withAuth } from '@/lib/auth/auth-handler';
 import { isValidRole, isValidUserStatus } from '@/lib/auth/roles';
 import { createAuditLog } from '@/lib/audit/audit-log';
+import { logger } from '@/lib/logging/logger';
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getSession();
-
-  if (!session?.userId) {
-    return NextResponse.json(
-      { error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } },
-      { status: 401 }
-    );
-  }
-
-  if (session.role !== 'ADMIN') {
-    return NextResponse.json(
-      { error: { code: 'FORBIDDEN', message: 'Insufficient permissions' } },
-      { status: 403 }
-    );
-  }
+  const auth = await withAuth(request, ['ADMIN']);
+  if ('response' in auth) return auth.response;
 
   try {
     const { id } = await params;
@@ -65,7 +53,7 @@ export async function PATCH(
       await createAuditLog({
         eventType: 'admin.user.role_changed',
         actorType: 'USER',
-        actorId: session.userId,
+        actorId: auth.ctx.userId,
         targetType: 'user',
         targetId: id,
         metadata: { from: user.role, to: role },
@@ -76,7 +64,7 @@ export async function PATCH(
       await createAuditLog({
         eventType: 'admin.user.disabled',
         actorType: 'USER',
-        actorId: session.userId,
+        actorId: auth.ctx.userId,
         targetType: 'user',
         targetId: id,
         metadata: { from: user.status, to: status },
@@ -85,7 +73,7 @@ export async function PATCH(
 
     return NextResponse.json({ user: updated });
   } catch (error) {
-    console.error('Update user error:', error);
+    logger.error('Update user error:', { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: { code: 'INTERNAL_ERROR', message: 'An error occurred' } },
       { status: 500 }

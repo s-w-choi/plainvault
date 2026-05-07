@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { checkRateLimit, getClientIpKey } from '@/lib/security/rate-limit';
 import argon2 from 'argon2';
 import { NextResponse, type NextRequest } from 'next/server';
+import { logger } from '@/lib/logging/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
       message: 'Registration request submitted. Please wait for admin approval.',
     });
   } catch (error) {
-    console.error('Register error:', error);
+    logger.error('Register error:', { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: { code: 'INTERNAL_ERROR', message: 'An error occurred' } },
       { status: 500 }

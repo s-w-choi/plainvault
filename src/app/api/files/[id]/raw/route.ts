@@ -2,27 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { decrypt } from '@/lib/crypto/encryption';
 import { createAuditLog } from '@/lib/audit/audit-log';
-import { getSession } from '@/lib/auth/auth';
+import { withAuth } from '@/lib/auth/auth-handler';
 import { formatKST } from '@/lib/time/kst';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getSession();
-  if (!session?.userId || session.status !== 'APPROVED') {
-    return NextResponse.json(
-      { error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } },
-      { status: 401 }
-    );
-  }
-
-  if (!['ADMIN', 'DEVELOPER'].includes(session.role || '')) {
-    return NextResponse.json(
-      { error: { code: 'FORBIDDEN', message: 'Insufficient permissions' } },
-      { status: 403 }
-    );
-  }
+  const auth = await withAuth(request, ['ADMIN', 'DEVELOPER']);
+  if ('response' in auth) return auth.response;
 
   const { id } = await params;
 
@@ -48,7 +36,7 @@ export async function GET(
   await createAuditLog({
     eventType: 'file.raw_viewed',
     actorType: 'USER',
-    actorId: session.userId,
+    actorId: auth.ctx.userId,
     targetType: 'VaultFile',
     targetId: file.id,
     ipAddress: ip,

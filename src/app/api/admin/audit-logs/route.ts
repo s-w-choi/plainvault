@@ -1,25 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { getSession } from '@/lib/auth/auth';
+import { withAuth } from '@/lib/auth/auth-handler';
 import { createAuditLog } from '@/lib/audit/audit-log';
 import { formatKST } from '@/lib/time/kst';
+import { logger } from '@/lib/logging/logger';
 
 export async function GET(request: NextRequest) {
-  const session = await getSession();
-
-  if (!session?.userId) {
-    return NextResponse.json(
-      { error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } },
-      { status: 401 }
-    );
-  }
-
-  if (session.role !== 'ADMIN') {
-    return NextResponse.json(
-      { error: { code: 'FORBIDDEN', message: 'Insufficient permissions' } },
-      { status: 403 }
-    );
-  }
+  const auth = await withAuth(request, ['ADMIN']);
+  if ('response' in auth) return auth.response;
 
   try {
     const { searchParams } = new URL(request.url);
@@ -50,7 +38,7 @@ export async function GET(request: NextRequest) {
     await createAuditLog({
       eventType: 'admin.audit_log_viewed',
       actorType: 'USER',
-      actorId: session.userId,
+      actorId: auth.ctx.userId,
       metadata: { page, limit },
     });
 
@@ -67,7 +55,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('List audit logs error:', error);
+    logger.error('List audit logs error:', { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: { code: 'INTERNAL_ERROR', message: 'An error occurred' } },
       { status: 500 }
