@@ -14,7 +14,7 @@ import { execSync } from 'child_process';
 // ── crypto helpers (require to avoid TS import path issues in tsx) ──────────
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const crypto = require('../src/lib/crypto/encryption') as {
+const crypto = require('../../apps/app/src/lib/crypto/encryption') as {
   encrypt: (plaintext: string) => string;
   hashContent: (plaintext: string) => string;
 };
