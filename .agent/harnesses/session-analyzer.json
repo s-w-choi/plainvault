@@ -1,0 +1,27 @@
+{
+  "name": "session-analyzer",
+  "description": "Analyzes Claude Code session to generate verification checklist. Auto-runs lint/typecheck/build/test and security checks, provides manual review items for UI/UX.",
+  "entry": ".agent/harnesses/session-analyzer.ts",
+  "scripts": {
+    "analyze": "tsx .agent/harnesses/session-analyzer.ts",
+    "analyze:update": "tsx .agent/harnesses/session-analyzer.ts --update"
+  },
+  "outputs": [
+    ".agent/harnesses/session-analysis.json",
+    ".agent/harnesses/session-analysis.md"
+  ],
+  "keywords": ["verification", "checklist", "session", "test", "lint", "security", "qa"],
+  "autoDetects": [
+    "session-analysis.json",
+    "session-analysis.md"
+  ],
+  "categories": [
+    "code-quality",
+    "security",
+    "auth",
+    "file-operations",
+    "api-keys",
+    "audit",
+    "ui-ux"
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "project": "plainvault",
+  "generatedAt": "2026-05-08T00:00:00.000Z",
+  "skills": [
+    {
+      "id": "harness",
+      "file": ".agent/skills/harness-skill/SKILL.md",
+      "category": "verification",
+      "when": "Any change + need session/harness evidence"
+    },
+    {
+      "id": "security",
+      "file": ".agent/skills/security-skill/SKILL.md",
+      "category": "security",
+      "when": "Auth/session/encryption/audit/api-key modifications"
+    },
+    {
+      "id": "qa",
+      "file": ".agent/skills/qa-skill/SKILL.md",
+      "category": "quality",
+      "when": "Feature changes before merge"
+    },
+    {
+      "id": "a11y",
+      "file": ".agent/skills/a11y-skill/SKILL.md",
+      "category": "ui",
+      "when": "Component/page changes"
+    },
+    {
+      "id": "i18n",
+      "file": ".agent/skills/i18n-skill/SKILL.md",
+      "category": "localization",
+      "when": "Text/translation changes"
+    },
+    {
+      "id": "architecture",
+      "file": ".agent/skills/architecture-skill/SKILL.md",
+      "category": "architecture",
+      "when": "Refactor/move files across apps/packages/shared"
+    },
+    {
+      "id": "commit-governance",
+      "file": ".agent/skills/commit-governance-skill/SKILL.md",
+      "category": "governance",
+      "when": "Before commit"
+    },
+    {
+      "id": "observability",
+      "file": ".agent/skills/observability-skill/SKILL.md",
+      "category": "ops",
+      "when": "Log/security event or monitoring changes"
+    },
+    {
+      "id": "docs",
+      "file": ".agent/skills/docs-skill/SKILL.md",
+      "category": "documentation",
+      "when": "Docs/process/task-list update"
+    },
+    {
+      "id": "ops",
+      "file": ".agent/skills/ops-skill/SKILL.md",
+      "category": "operations",
+      "when": "Deployment/backup/restore/migration"
+    },
+    {
+      "id": "prisma-audit",
+      "file": ".agent/skills/prisma-audit-skill/SKILL.md",
+      "category": "governance",
+      "when": "Schema migration or migration drift"
+    },
+    {
+      "id": "secret-rotation",
+      "file": ".agent/skills/secret-rotation-skill/SKILL.md",
+      "category": "security",
+      "when": "Key/secret lifecycle updates"
+    },
+    {
+      "id": "dependency-upgrade",
+      "file": ".agent/skills/dependency-upgrade-skill/SKILL.md",
+      "category": "maintenance",
+      "when": "Dependency/version updates and lockfile changes"
+    },
+    {
+      "id": "release",
+      "file": ".agent/skills/release-skill/SKILL.md",
+      "category": "release",
+      "when": "Release cut, rollout, and rollback readiness"
+    }
+  ]
+}
