@@ -1,10 +1,8 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/db';
 import { encrypt, hashContent } from '@/lib/crypto/encryption';
 import { createAuditLog } from '@/lib/audit/audit-log';
 import { formatKST } from '@/lib/time/kst';
 import type { AuthContext } from '@/lib/auth/auth-handler';
-
-const prisma = new PrismaClient();
 
 export interface FileSelect {
   id: string;

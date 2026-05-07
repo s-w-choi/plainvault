@@ -1,8 +1,6 @@
 import crypto from 'node:crypto';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/db';
 import { createAuditLog } from '../audit/audit-log';
-
-const prisma = new PrismaClient();
 
 const API_KEY_PREFIX = 'secvault_';
 const API_KEY_LENGTH = 32;
