@@ -52,13 +52,16 @@ model VaultFile {
   updatedAt       DateTime  @updatedAt
   deletedAt       DateTime?
 
-  category    Category?     @relation(fields: [categoryId], references: [id])
-  createdBy   User          @relation("FileCreator", fields: [createdById], references: [id])
-  updatedBy   User?         @relation("FileUpdater", fields: [updatedById], references: [id])
+  category    Category?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdBy   User          @relation("FileCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  updatedBy   User?         @relation("FileUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
   revisions   FileRevision[]
 
   @@index([deletedAt])
   @@index([contentType])
+  @@index([createdById])
+  @@index([updatedById])
+  @@index([categoryId])
 }
 
 model FileRevision {
@@ -73,11 +76,12 @@ model FileRevision {
   changedById          String
   changedAt           DateTime @default(now())
 
-  file     VaultFile @relation(fields: [fileId], references: [id])
-  changedBy User    @relation(fields: [changedById], references: [id])
+  file     VaultFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  changedBy User    @relation(fields: [changedById], references: [id], onDelete: Cascade)
 
   @@unique([fileId, revisionNumber])
   @@index([fileId])
+  @@index([changedById])
 }
 
 model AuditLog {
@@ -100,24 +104,25 @@ model AuditLog {
 }
 
 model ApiKey {
-  id          String    @id @default(uuid())
+  id          String       @id @default(uuid())
   name        String
   keyPrefix   String
   keyHash     String
-  scopesJson  String    @default("[\"files:read_raw\"]")
+  scopesJson  String       @default("[\"files:read_raw\"]")
   status      String    @default("ACTIVE")
   createdById String
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime     @default(now())
   expiresAt   DateTime
   lastUsedAt  DateTime?
   revokedById String?
   revokedAt   DateTime?
 
-  createdBy  User @relation("ApiKeyCreator", fields: [createdById], references: [id])
-  revokedBy  User? @relation("ApiKeyRevoker", fields: [revokedById], references: [id])
+  createdBy  User @relation("ApiKeyCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  revokedBy  User? @relation("ApiKeyRevoker", fields: [revokedById], references: [id], onDelete: SetNull)
 
   @@index([keyHash])
   @@index([status])
+  @@index([createdById])
 }
 
 model Session {

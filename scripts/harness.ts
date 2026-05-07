@@ -6,7 +6,7 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import * as bcrypt from 'bcryptjs';
+import argon2 from 'argon2';
 import * as path from 'path';
 import * as fs from 'fs';
 import { execSync } from 'child_process';
@@ -134,7 +134,7 @@ async function main() {
 
   try {
     // ── User creation ───────────────────────────────────────────────────────
-    const passwordHash = await bcrypt.hash('TestPass123!', 12);
+    const passwordHash = await argon2.hash('TestPass123!', { type: argon2.argon2id });
 
     const admin = await db.user.create({
       data: { name: 'Admin User', email: 'harness_admin@test.local', passwordHash, role: 'ADMIN', status: 'APPROVED' },
