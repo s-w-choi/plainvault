@@ -1,11 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { NextResponse, type NextRequest } from 'next/server';
+import { prisma } from '@/lib/db';
 import { verifyApiKey, updateLastUsed } from '@/lib/api-keys/api-key';
 import { decrypt } from '@/lib/crypto/encryption';
 import { createAuditLog } from '@/lib/audit/audit-log';
 import { formatKST } from '@/lib/time/kst';
-
-const prisma = new PrismaClient();
 
 export async function GET(
   request: NextRequest,
@@ -74,6 +72,33 @@ export async function GET(
     return NextResponse.json(
       { error: { code: 'API_KEY_EXPIRED', message: 'API key is expired or revoked' } },
       { status: 401 }
+    );
+  }
+
+  // Parse and check scopes
+  let scopes: string[] = [];
+  try {
+    scopes = JSON.parse(apiKey.scopesJson);
+  } catch {
+    scopes = [];
+  }
+
+  if (!scopes.includes('files:read_raw')) {
+    await createAuditLog({
+      eventType: 'api_key.raw_file_failed',
+      actorType: 'API_KEY',
+      actorId: verifyResult.apiKeyId,
+      targetType: 'file',
+      targetId: fileId,
+      ipAddress: ip,
+      userAgent,
+      success: false,
+      failureReason: 'MISSING_SCOPE',
+    });
+
+    return NextResponse.json(
+      { error: { code: 'FORBIDDEN', message: 'API key does not have files:read_raw scope' } },
+      { status: 403 }
     );
   }
 
