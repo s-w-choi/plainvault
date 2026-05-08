@@ -77,8 +77,7 @@ export default function LandingPage() {
       <header className="border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Image src="/logo.png" alt="PlainVault" width={32} height={32} />
-            <span className="text-lg font-semibold text-gray-900">PlainVault</span>
+            <Image src="/logo.png" alt="PlainVault" width={100} height={100} />
           </div>
           <nav className="flex items-center gap-4">
             <a
@@ -120,17 +119,13 @@ export default function LandingPage() {
             </p>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
               <a
-                href="https://github.com/s-w-choi/plainvault"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/get-started"
                 className="w-full sm:w-auto px-8 py-3.5 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-all hover:shadow-lg hover:shadow-indigo-200 hover:-translate-y-0.5"
               >
                 Get Started
               </a>
               <a
-                href="https://github.com/s-w-choi/plainvault#readme"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/docs"
                 className="w-full sm:w-auto px-8 py-3.5 bg-white border border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all"
               >
                 Read the Docs
@@ -257,17 +252,13 @@ export default function LandingPage() {
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
             <a
-              href="https://github.com/s-w-choi/plainvault"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/get-started"
               className="w-full sm:w-auto px-8 py-3.5 bg-white text-indigo-700 font-semibold rounded-xl hover:bg-indigo-50 transition-all hover:shadow-xl hover:-translate-y-0.5"
             >
-              View on GitHub
+              Get Started
             </a>
             <a
-              href="https://github.com/s-w-choi/plainvault#readme"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/docs"
               className="w-full sm:w-auto px-8 py-3.5 bg-transparent border-2 border-white/30 text-white font-semibold rounded-xl hover:bg-white/10 transition-all"
             >
               Read the Docs
@@ -279,15 +270,14 @@ export default function LandingPage() {
       <footer className="border-t border-gray-100 py-12">
         <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <Image src="/logo.png" alt="PlainVault" width={24} height={24} />
-            <span className="font-semibold text-gray-900">PlainVault</span>
+            <Image src="/logo.png" alt="PlainVault" width={100} height={100} />
           </div>
           <p className="text-sm text-gray-500">
             Secure vault management for teams. Built with care.
           </p>
           <div className="flex items-center gap-6 text-sm text-gray-500">
             <a href="https://github.com/s-w-choi/plainvault" target="_blank" rel="noopener noreferrer" className="hover:text-gray-900 transition-colors">GitHub</a>
-            <a href="https://github.com/s-w-choi/plainvault#readme" target="_blank" rel="noopener noreferrer" className="hover:text-gray-900 transition-colors">Documentation</a>
+            <a href="/docs" className="hover:text-gray-900 transition-colors">Documentation</a>
           </div>
         </div>
       </footer>
