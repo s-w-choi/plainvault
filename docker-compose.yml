@@ -10,6 +10,11 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=file:/app/prisma/data/vault.db
+      # VAULT_ENCRYPTION_KEY is auto-generated on first run and persisted in vault-data volume.
+      # Uncomment to provide your own key:
+      # - VAULT_ENCRYPTION_KEY=your-base64-encoded-32-byte-key
+      - INIT_ADMIN_EMAIL=admin@plainvault.local
+      - INIT_ADMIN_PASSWORD=plainvault-admin
     volumes:
       - vault-data:/app/prisma/data
     restart: unless-stopped

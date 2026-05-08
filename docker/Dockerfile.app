@@ -15,7 +15,6 @@ COPY package.json ./
 COPY pnpm-lock.yaml ./
 COPY pnpm-workspace.yaml ./
 COPY prisma ./prisma/
-COPY prisma ./apps/app/prisma/
 
 RUN pnpm --dir ./apps/app install --no-frozen-lockfile
 
@@ -48,6 +47,9 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+COPY docker/docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
+
 COPY --from=builder --chown=nextjs:nodejs /app/apps/app/.next/standalone/apps/app ./apps/app
 COPY --from=builder --chown=nextjs:nodejs /app/apps/app/.next/static ./apps/app/.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
@@ -60,4 +62,5 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["node", "apps/app/server.js"]
