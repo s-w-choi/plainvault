@@ -68,10 +68,9 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 
 | Email | Password | Role |
 |-------|----------|------|
-| admin@internal.local | admin123 | ADMIN |
-| developer@internal.local | dev123 | DEVELOPER |
-| viewer@internal.local | viewer123 | VIEWER |
-| pending@internal.local | viewer123 | PENDING |
+| admin@plainvault.local | plainvault-admin | ADMIN |
+
+> These defaults are used when `INIT_ADMIN_EMAIL` and `INIT_ADMIN_PASSWORD` env vars are not set. Override them in `.env` or `docker-compose.yml`.
 
 ## Commands
 

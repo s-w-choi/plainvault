@@ -25,7 +25,7 @@ PRISMA_SCHEMA := prisma/schema.prisma
 
 # --- Phony Targets -------------------------------------------------------------
 
-.PHONY: help install run migrate reset db-studio test check docker-landing docker-service deploy-web deploy-web-preview
+.PHONY: help install run stop migrate reset db-studio test check docker-landing docker-service deploy-web deploy-web-preview
 
 # --- Targets -------------------------------------------------------------------
 
@@ -44,6 +44,12 @@ install:
 ## Run: Start all apps in parallel (web@13001 landing, app@13000 main service)
 run:
 	$(PKG_MANAGER) dev
+
+## Stop: Kill all running Next.js dev servers
+stop:
+	@echo "==> Stopping dev servers..."
+	@lsof -ti :13000 -ti :13001 2>/dev/null | xargs kill -9 2>/dev/null || true
+	@echo "==> Dev servers stopped."
 
 ## Test: Run lint, typecheck, and tests (requires 90%+ coverage)
 test:

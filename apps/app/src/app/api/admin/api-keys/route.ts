@@ -33,16 +33,16 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({
-      apiKeys: apiKeys.map((k) => ({
-        id: k.id,
-        name: k.name,
-        keyPrefix: k.keyPrefix,
-        status: k.status,
-        scopes: JSON.parse(k.scopesJson),
-        createdAt: k.createdAt.toISOString(),
-        expiresAt: k.expiresAt.toISOString(),
-        lastUsedAt: k.lastUsedAt ? k.lastUsedAt.toISOString() : null,
-        revokedAt: k.revokedAt ? k.revokedAt.toISOString() : null,
+      apiKeys: apiKeys.map(({ id, name, keyPrefix, status, scopesJson, createdAt, expiresAt, lastUsedAt, revokedAt }) => ({
+        id,
+        name,
+        keyPrefix,
+        status,
+        scopes: JSON.parse(scopesJson),
+        createdAt: createdAt.toISOString(),
+        expiresAt: expiresAt.toISOString(),
+        lastUsedAt: lastUsedAt ? lastUsedAt.toISOString() : null,
+        revokedAt: revokedAt ? revokedAt.toISOString() : null,
       })),
     });
   } catch (error) {
