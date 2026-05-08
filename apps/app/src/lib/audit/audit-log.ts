@@ -11,19 +11,13 @@ export type AuditEventType =
   | 'admin.user.role_changed'
   | 'admin.user.disabled'
   | 'file.created'
-  | 'file.list_viewed'
-  | 'file.masked_viewed'
   | 'file.raw_viewed'
   | 'file.updated'
   | 'file.deleted'
-  | 'file.revision_viewed'
-  | 'file.diff_viewed'
   | 'api_key.created'
   | 'api_key.revoked'
-  | 'api_key.raw_file_requested'
   | 'api_key.raw_file_succeeded'
-  | 'api_key.raw_file_failed'
-  | 'admin.audit_log_viewed';
+  | 'api_key.raw_file_failed';
 
 export type ActorType = 'USER' | 'API_KEY' | 'SYSTEM';
 

@@ -157,53 +157,86 @@ export default function DashboardPage() {
 
       <main className="max-w-6xl mx-auto px-6 py-8">
         {/* Welcome */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-gray-900">{t("title")}</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            {t("welcomeBack", { name: user.name })}
-          </p>
+        <div className="relative mb-8 overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-50 via-white to-purple-50 px-8 py-10">
+          <div className="absolute top-4 left-4 w-32 h-32 bg-indigo-100 rounded-full blur-3xl opacity-50" />
+          <div className="absolute bottom-4 right-8 w-48 h-48 bg-purple-100 rounded-full blur-3xl opacity-40" />
+          <div className="relative">
+            <h1 className="text-2xl font-bold text-gray-900">{t("title")}</h1>
+            <p className="mt-1 text-sm text-gray-500">
+              {t("welcomeBack", { name: user.name })}
+            </p>
+          </div>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-1 gap-4 mb-8 sm:grid-cols-3">
-          <Card>
-            <CardContent className="pt-6 pb-6">
-              <p className="text-sm font-medium text-gray-500">{t("totalFiles")}</p>
-              <p className="mt-2 text-3xl font-semibold text-gray-900">{totalCount}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 pb-6">
-              <p className="text-sm font-medium text-gray-500">{t("yourRole")}</p>
-              <p className="mt-2 text-3xl font-semibold text-gray-900 capitalize">{user.role.toLowerCase()}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 pb-6">
-              <p className="text-sm font-medium text-gray-500">{t("status")}</p>
-              <p className="mt-2 text-3xl font-semibold text-gray-900">{t("active")}</p>
-            </CardContent>
-          </Card>
+          <div className="bg-indigo-50 rounded-xl p-5 border border-indigo-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
+                <svg className="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-indigo-600">{t("totalFiles")}</p>
+                <p className="text-2xl font-bold text-indigo-900">{totalCount}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-green-50 rounded-xl p-5 border border-green-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-green-600">{t("yourRole")}</p>
+                <p className="text-2xl font-bold text-green-900 capitalize">{user.role.toLowerCase()}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-purple-50 rounded-xl p-5 border border-purple-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                <svg className="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-purple-600">{t("status")}</p>
+                <p className="text-2xl font-bold text-purple-900">{t("active")}</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Administration */}
         {(user.role === "ADMIN") && (
           <div className="grid grid-cols-1 gap-4 mb-8 sm:grid-cols-2">
-            <Card className="hover:border-gray-300 transition-colors">
+            <Card className="rounded-xl border-indigo-100 bg-gradient-to-br from-indigo-50/50 to-white hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-50 transition-all">
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">{t("administration")}</CardTitle>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                  {t("administration")}
+                </CardTitle>
               </CardHeader>
               <CardContent className="pt-0 flex flex-col gap-3">
                 <p className="text-sm text-gray-500">{t("manageDescription")}</p>
                 <div className="flex flex-wrap gap-2">
                   <Link href="/admin/users">
-                    <Button variant="outline" size="sm">{tNav("users")}</Button>
+                    <Button variant="outline" size="sm" className="rounded-lg">{tNav("users")}</Button>
                   </Link>
                   <Link href="/admin/api-keys">
-                    <Button variant="outline" size="sm">{tNav("apiKeys")}</Button>
+                    <Button variant="outline" size="sm" className="rounded-lg">{tNav("apiKeys")}</Button>
                   </Link>
                   <Link href="/admin/audit-logs">
-                    <Button variant="outline" size="sm">{tNav("auditLogs")}</Button>
+                    <Button variant="outline" size="sm" className="rounded-lg">{tNav("auditLogs")}</Button>
                   </Link>
                 </div>
               </CardContent>
@@ -213,10 +246,17 @@ export default function DashboardPage() {
 
         {/* Recent Files */}
         {recentFiles.length > 0 && (
-          <Card className="mb-8">
+          <Card className="mb-8 rounded-xl hover:shadow-lg hover:shadow-gray-100/50 transition-all">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base">{t("recentFiles")}</CardTitle>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  {t("recentFiles")}
+                </CardTitle>
               </div>
             </CardHeader>
             <CardContent className="pt-0 p-0">
@@ -232,15 +272,15 @@ export default function DashboardPage() {
                 </TableHeader>
                 <TableBody>
                   {recentFiles.map((file) => (
-                    <TableRow key={file.id}>
+                    <TableRow key={file.id} className="hover:bg-indigo-50/30 transition-colors">
                       <TableCell>
-                        <Link href={`/files/${file.id}`} className="text-indigo-600 hover:text-indigo-700 hover:underline">
+                        <Link href={`/files/${file.id}`} className="text-indigo-600 hover:text-indigo-700 hover:underline font-medium">
                           {file.title}
                         </Link>
                       </TableCell>
                       <TableCell className="text-gray-500">{file.actualFileName}</TableCell>
                       <TableCell>
-                        <Badge variant="secondary">{file.contentType}</Badge>
+                        <Badge variant="secondary" className="rounded-md">{file.contentType}</Badge>
                       </TableCell>
                       <TableCell className="text-gray-500">{file.updatedBy?.name ?? "—"}</TableCell>
                       <TableCell className="text-gray-500 font-mono text-xs">{file.updatedAt}</TableCell>
@@ -325,10 +365,17 @@ export default function DashboardPage() {
         )}
 
         {/* All Files */}
-        <Card>
+        <Card className="rounded-xl hover:shadow-lg hover:shadow-gray-100/50 transition-all">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base">{t("allFiles", { count: filteredFiles.length })}</CardTitle>
+              <CardTitle className="text-base flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                  </svg>
+                </div>
+                {t("allFiles", { count: filteredFiles.length })}
+              </CardTitle>
               {canCreate && !showForm && (
                 <Button onClick={() => setShowForm(true)} size="sm" aria-label={t("createNewFileAria")}>{t("newFile")}</Button>
               )}
@@ -396,7 +443,7 @@ export default function DashboardPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredFiles.map((file) => (
-                    <TableRow key={file.id}>
+                    <TableRow key={file.id} className="hover:bg-indigo-50/30 transition-colors">
                       <TableCell>
                         <Link href={`/files/${file.id}`} className="text-indigo-600 hover:text-indigo-700 hover:underline font-medium">
                           {file.title}

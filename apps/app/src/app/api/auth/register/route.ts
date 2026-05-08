@@ -1,12 +1,21 @@
 import { createAuditLog } from '@/lib/audit/audit-log';
 import { prisma } from '@/lib/db';
 import { checkRateLimit, getClientIpKey } from '@/lib/security/rate-limit';
+import { getSettingBool } from '@/lib/settings/settings';
 import argon2 from 'argon2';
 import { NextResponse, type NextRequest } from 'next/server';
 import { logger } from '@/lib/logging/logger';
 
 export async function POST(request: NextRequest) {
   try {
+    const allowRegistration = await getSettingBool('allow_registration');
+    if (!allowRegistration) {
+      return NextResponse.json(
+        { error: { code: 'FORBIDDEN', message: 'Registration is currently disabled' } },
+        { status: 403 }
+      );
+    }
+
     const clientIp = getClientIpKey(request.headers.get('x-forwarded-for'));
     const rateLimitResult = checkRateLimit(`register:${clientIp}`, { windowMs: 3600_000, maxAttempts: 5 });
     if (!rateLimitResult.allowed) {

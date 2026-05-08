@@ -2,8 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { verifyApiKey, updateLastUsed } from '@/lib/api-keys/api-key';
 import { decrypt } from '@/lib/crypto/encryption';
-import { createAuditLog } from '@/lib/audit/audit-log';
 import { formatKST } from '@/lib/time/kst';
+import { getSettingBool } from '@/lib/settings/settings';
 
 export async function GET(
   request: NextRequest,
@@ -15,17 +15,6 @@ export async function GET(
 
   const authHeader = request.headers.get('authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    await createAuditLog({
-      eventType: 'api_key.raw_file_requested',
-      actorType: 'API_KEY',
-      targetType: 'file',
-      targetId: fileId,
-      ipAddress: ip,
-      userAgent,
-      success: false,
-      failureReason: 'MISSING_BEARER_TOKEN',
-    });
-
     return NextResponse.json(
       { error: { code: 'UNAUTHORIZED', message: 'Missing or invalid Authorization header' } },
       { status: 401 }
@@ -37,17 +26,6 @@ export async function GET(
   const verifyResult = await verifyApiKey(token);
 
   if (!verifyResult.valid) {
-    await createAuditLog({
-      eventType: 'api_key.raw_file_requested',
-      actorType: 'API_KEY',
-      targetType: 'file',
-      targetId: fileId,
-      ipAddress: ip,
-      userAgent,
-      success: false,
-      failureReason: verifyResult.error,
-    });
-
     const status = verifyResult.error === 'API_KEY_REVOKED' ? 403 : 401;
     return NextResponse.json(
       { error: { code: verifyResult.error, message: 'API key is invalid or expired' } },
@@ -75,7 +53,6 @@ export async function GET(
     );
   }
 
-  // Parse and check scopes
   let scopes: string[] = [];
   try {
     scopes = JSON.parse(apiKey.scopesJson);
@@ -84,6 +61,7 @@ export async function GET(
   }
 
   if (!scopes.includes('files:read_raw')) {
+    const { createAuditLog } = await import('@/lib/audit/audit-log');
     await createAuditLog({
       eventType: 'api_key.raw_file_failed',
       actorType: 'API_KEY',
@@ -103,6 +81,7 @@ export async function GET(
   }
 
   if (apiKey.createdBy.role !== 'ADMIN' && apiKey.createdBy.role !== 'DEVELOPER') {
+    const { createAuditLog } = await import('@/lib/audit/audit-log');
     await createAuditLog({
       eventType: 'api_key.raw_file_failed',
       actorType: 'API_KEY',
@@ -139,17 +118,21 @@ export async function GET(
     );
   }
 
-  await createAuditLog({
-    eventType: 'api_key.raw_file_succeeded',
-    actorType: 'API_KEY',
-    actorId: verifyResult.apiKeyId,
-    targetType: 'file',
-    targetId: fileId,
-    ipAddress: ip,
-    userAgent,
-    metadata: { fileName: file.actualFileName },
-    success: true,
-  });
+  const logRawAccess = await getSettingBool('audit_log_raw_access');
+  if (logRawAccess) {
+    const { createAuditLog } = await import('@/lib/audit/audit-log');
+    await createAuditLog({
+      eventType: 'api_key.raw_file_succeeded',
+      actorType: 'API_KEY',
+      actorId: verifyResult.apiKeyId,
+      targetType: 'file',
+      targetId: fileId,
+      ipAddress: ip,
+      userAgent,
+      metadata: { fileName: file.actualFileName },
+      success: true,
+    });
+  }
 
   return NextResponse.json(
     {

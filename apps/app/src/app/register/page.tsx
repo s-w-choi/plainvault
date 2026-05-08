@@ -66,7 +66,7 @@ function RegisterForm() {
   }
 
   return (
-    <Card>
+    <Card className="rounded-xl border-gray-100 shadow-xl shadow-gray-200/50">
       <CardHeader>
         <CardTitle>{t("createAccount")}</CardTitle>
         <CardDescription>{t("registerDescription")}</CardDescription>
@@ -182,14 +182,16 @@ export default function RegisterPage() {
   const tCommon = useTranslations("common");
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center px-4">
+      <div className="absolute top-10 left-10 w-72 h-72 bg-indigo-100 rounded-full blur-3xl opacity-50" />
+      <div className="absolute bottom-10 right-10 w-96 h-96 bg-purple-100 rounded-full blur-3xl opacity-40" />
+      <div className="w-full max-w-md relative z-10">
         <div className="mb-8 text-center">
-          <Image src="/logo.png" alt="PlainVault" width={48} height={48} className="mx-auto" />
+          <Image src="/logo.png" alt="PlainVault" width={100} height={100} className="mx-auto" />
         </div>
 
         <Suspense fallback={
-          <Card>
+          <Card className="rounded-xl border-gray-100 shadow-xl shadow-gray-200/50">
             <CardContent className="p-6 text-center text-gray-500 text-sm">{tCommon("loading")}</CardContent>
           </Card>
         }>

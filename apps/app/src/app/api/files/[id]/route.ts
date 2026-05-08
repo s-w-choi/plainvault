@@ -5,6 +5,7 @@ import { decrypt } from '@/lib/crypto/encryption';
 import { maskContent } from '@/lib/masking/masking';
 import { validateTitle, validateActualFileName, validateContentSize, validateContentType } from '@/lib/validation/validation';
 import { formatKST } from '@/lib/time/kst';
+import { getSettingBool } from '@/lib/settings/settings';
 
 export async function GET(
   request: NextRequest,
@@ -21,31 +22,28 @@ export async function GET(
   const isAdminOrDeveloper = ['ADMIN', 'DEVELOPER'].includes(auth.ctx.role);
 
   if (isAdminOrDeveloper) {
-    const { createAuditLog } = await import('@/lib/audit/audit-log');
-    await createAuditLog({
-      eventType: 'file.raw_viewed', actorType: 'USER', actorId: auth.ctx.userId,
-      targetType: 'VaultFile', targetId: id, ipAddress: ip, userAgent,
-      metadata: { title: file.title },
+    const logRawAccess = await getSettingBool('audit_log_raw_access');
+    if (logRawAccess) {
+      const { createAuditLog } = await import('@/lib/audit/audit-log');
+      await createAuditLog({
+        eventType: 'file.raw_viewed', actorType: 'USER', actorId: auth.ctx.userId,
+        targetType: 'VaultFile', targetId: id, ipAddress: ip, userAgent,
+        metadata: { title: file.title },
+      });
+    }
+    const response = NextResponse.json({
+      file: {
+        id: file.id, title: file.title, actualFileName: file.actualFileName,
+        contentType: file.contentType, content: decrypt(file.encryptedContent),
+        createdAt: formatKST(file.createdAt), updatedAt: formatKST(file.updatedAt),
+        category: file.category, createdBy: file.createdBy, updatedBy: file.updatedBy,
+      },
     });
-const response = NextResponse.json({
-    file: {
-      id: file.id, title: file.title, actualFileName: file.actualFileName,
-      contentType: file.contentType, content: decrypt(file.encryptedContent),
-      createdAt: formatKST(file.createdAt), updatedAt: formatKST(file.updatedAt),
-      category: file.category, createdBy: file.createdBy, updatedBy: file.updatedBy,
-    },
-  });
     response.headers.set('Cache-Control', 'no-store');
     return response;
   }
 
   // viewer role
-  const { createAuditLog } = await import('@/lib/audit/audit-log');
-  await createAuditLog({
-    eventType: 'file.masked_viewed', actorType: 'USER', actorId: auth.ctx.userId,
-    targetType: 'VaultFile', targetId: id, ipAddress: ip, userAgent,
-    metadata: { title: file.title },
-  });
   const maskedContent = maskContent(decrypt(file.encryptedContent), file.contentType);
   const response = NextResponse.json({
     file: {
@@ -86,7 +84,10 @@ export async function PATCH(
     const v = validateContentType(contentType);
     if (!v.valid) return errorResponse('VALIDATION_ERROR', v.errors.join(', '), 400);
   }
-  if (!changeSummary) return errorResponse('VALIDATION_ERROR', 'changeSummary is required', 400);
+  const requireSummary = await getSettingBool('require_change_summary');
+  if (requireSummary && !changeSummary) {
+    return errorResponse('VALIDATION_ERROR', 'changeSummary is required', 400);
+  }
 
   const { ip, userAgent } = getClientInfo(request);
 

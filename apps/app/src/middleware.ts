@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { generateCsrfToken, validateCsrfToken } from './apps/app/src/lib/security/csrf';
+import { generateCsrfToken, validateCsrfToken } from '@/lib/security/csrf';
 
 const PUBLIC_API_ROUTES = [
   '/api/auth/login',

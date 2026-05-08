@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, getClientInfo, errorResponse } from '@/lib/auth/auth-handler';
 import { listFiles, createFile } from '@/lib/files/file-service';
 import { listCategories } from '@/lib/categories/category-service';
-import { createAuditLog } from '@/lib/audit/audit-log';
 import { validateTitle, validateActualFileName, validateContentSize, validateContentType } from '@/lib/validation/validation';
 
 export async function GET(request: NextRequest) {
@@ -15,14 +14,6 @@ export async function GET(request: NextRequest) {
 
   const { files } = await listFiles(search, categoryId);
   const categories = await listCategories();
-
-  await createAuditLog({
-    eventType: 'file.list_viewed',
-    actorType: 'USER',
-    actorId: auth.ctx.userId,
-    targetType: 'VaultFile',
-    metadata: { count: files.length },
-  });
 
   return NextResponse.json({ files, categories });
 }

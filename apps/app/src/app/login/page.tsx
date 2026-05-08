@@ -50,13 +50,15 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center px-4">
+      <div className="absolute top-10 left-10 w-72 h-72 bg-indigo-100 rounded-full blur-3xl opacity-50" />
+      <div className="absolute bottom-10 right-10 w-96 h-96 bg-purple-100 rounded-full blur-3xl opacity-40" />
+      <div className="w-full max-w-md relative z-10">
         <div className="mb-8 text-center">
-          <Image src="/logo.png" alt="PlainVault" width={48} height={48} className="mx-auto" />
+          <Image src="/logo.png" alt="PlainVault" width={100} height={100} className="mx-auto" />
         </div>
 
-        <Card>
+        <Card className="rounded-xl border-gray-100 shadow-xl shadow-gray-200/50">
           <CardHeader>
             <CardTitle>{t("signIn")}</CardTitle>
             <CardDescription>{t("enterCredentials")}</CardDescription>

@@ -94,7 +94,12 @@ function PersonalContent() {
       <AppHeader user={user} activeTab="personal" />
 
       <main className="max-w-2xl mx-auto px-6 py-8">
-        <h1 className="text-xl font-semibold text-gray-900 mb-6">Personal</h1>
+        <div className="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-50 via-white to-purple-50 px-6 py-5">
+          <div className="absolute top-2 right-8 w-24 h-24 bg-purple-100 rounded-full blur-3xl opacity-40" />
+          <div className="relative">
+            <h1 className="text-xl font-bold text-gray-900">Personal</h1>
+          </div>
+        </div>
 
         <div className="flex gap-1 mb-6 border-b border-gray-200">
           <button

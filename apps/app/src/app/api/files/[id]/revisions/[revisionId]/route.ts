@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { withAuth } from '@/lib/auth/auth-handler';
 import { decrypt } from '@/lib/crypto/encryption';
-import { createAuditLog } from '@/lib/audit/audit-log';
 import { formatKST } from '@/lib/time/kst';
 
 export async function GET(
@@ -28,21 +27,7 @@ export async function GET(
     );
   }
 
-  const ip = request.headers.get('x-forwarded-for') || undefined;
-  const userAgent = request.headers.get('user-agent') || undefined;
-
   const decryptedContent = decrypt(revision.encryptedContentAfter);
-
-  await createAuditLog({
-    eventType: 'file.revision_viewed',
-    actorType: 'USER',
-    actorId: auth.ctx.userId,
-    targetType: 'FileRevision',
-    targetId: revision.id,
-    ipAddress: ip,
-    userAgent,
-    metadata: { fileId: id, revisionNumber: revision.revisionNumber },
-  });
 
   const response = NextResponse.json({
     revision: {

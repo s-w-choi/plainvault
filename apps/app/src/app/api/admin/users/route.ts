@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { withAuth } from '@/lib/auth/auth-handler';
-import { createAuditLog } from '@/lib/audit/audit-log';
 import { formatKST } from '@/lib/time/kst';
 import { logger } from '@/lib/logging/logger';
 
@@ -27,13 +26,6 @@ export async function GET(request: NextRequest) {
         createdAt: true,
         lastLoginAt: true,
       },
-    });
-
-    await createAuditLog({
-      eventType: 'admin.audit_log_viewed',
-      actorType: 'USER',
-      actorId: auth.ctx.userId,
-      metadata: { action: 'users.list', filter: status || 'all' },
     });
 
     return NextResponse.json({

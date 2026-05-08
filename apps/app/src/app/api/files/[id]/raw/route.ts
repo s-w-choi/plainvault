@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { decrypt } from '@/lib/crypto/encryption';
-import { createAuditLog } from '@/lib/audit/audit-log';
 import { withAuth } from '@/lib/auth/auth-handler';
 import { formatKST } from '@/lib/time/kst';
+import { getSettingBool } from '@/lib/settings/settings';
 
 export async function GET(
   request: NextRequest,
@@ -33,16 +33,20 @@ export async function GET(
   const ip = request.headers.get('x-forwarded-for') || undefined;
   const userAgent = request.headers.get('user-agent') || undefined;
 
-  await createAuditLog({
-    eventType: 'file.raw_viewed',
-    actorType: 'USER',
-    actorId: auth.ctx.userId,
-    targetType: 'VaultFile',
-    targetId: file.id,
-    ipAddress: ip,
-    userAgent,
-    metadata: { title: file.title },
-  });
+  const logRawAccess = await getSettingBool('audit_log_raw_access');
+  if (logRawAccess) {
+    const { createAuditLog } = await import('@/lib/audit/audit-log');
+    await createAuditLog({
+      eventType: 'file.raw_viewed',
+      actorType: 'USER',
+      actorId: auth.ctx.userId,
+      targetType: 'VaultFile',
+      targetId: file.id,
+      ipAddress: ip,
+      userAgent,
+      metadata: { title: file.title },
+    });
+  }
 
   const response = NextResponse.json({
     id: file.id,
