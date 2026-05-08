@@ -4,7 +4,7 @@
    * Run with: pnpm smoke
    */
 
-  const BASE = 'http://localhost:3000';
+  const BASE = 'http://localhost:13000';
 
 // ── cookie jar ────────────────────────────────────────────────────────────────
 

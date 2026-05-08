@@ -73,8 +73,8 @@ Authorization: Bearer sk_test_xxxx
 ```
 plainvault/
 ├── apps/
-│   ├── app/        Main service (Next.js, port 3000)
-│   └── web/        Landing page (Next.js, port 3001)
+│   ├── app/        Main service (Next.js, port 13000)
+│   └── web/        Landing page (Next.js, port 13001)
 ├── packages/
 │   ├── ui/         Shared UI component library
 │   └── shared/     Shared utility libraries
@@ -104,11 +104,11 @@ plainvault/
 # Clone and install
 make install
 
-# Start dev servers (app@3000, web@3001)
+# Start dev servers (app@13000, web@13001)
 make run
 ```
 
-Visit [http://localhost:3000](http://localhost:3000) and log in with:
+Visit [http://localhost:13000](http://localhost:13000) and log in with:
 
 - **Email:** `admin@plainvault.local`
 - **Password:** `plainvault-admin`

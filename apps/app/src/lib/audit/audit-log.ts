@@ -40,8 +40,42 @@ interface AuditLogInput {
   failureReason?: string;
 }
 
+const SECRET_VALUE_PATTERNS = [
+  /[a-zA-Z0-9_\-=\/+]{32,}/, // Long base64-like strings (likely keys/tokens)
+  /sk_live_[a-zA-Z0-9]+/,    // Stripe-style keys
+  /sk_test_[a-zA-Z0-9]+/,    // Stripe test keys
+  /secvault_[a-zA-Z0-9]+/,   // Our API keys
+  /AKIA[A-Z0-9]{16}/,        // AWS access keys
+];
+
+function sanitizeMetadata(metadata: Record<string, unknown>): Record<string, unknown> {
+  const sanitized: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(metadata)) {
+    if (typeof value === 'string') {
+      let sanitizedValue = value;
+      for (const pattern of SECRET_VALUE_PATTERNS) {
+        if (pattern.test(sanitizedValue)) {
+          sanitizedValue = '[REDACTED]';
+          break;
+        }
+      }
+      sanitized[key] = sanitizedValue.length > 100
+        ? sanitizedValue.substring(0, 100) + '...'
+        : sanitizedValue;
+    } else if (value && typeof value === 'object' && !Array.isArray(value)) {
+      sanitized[key] = sanitizeMetadata(value as Record<string, unknown>);
+    } else {
+      sanitized[key] = value;
+    }
+  }
+
+  return sanitized;
+}
+
 export async function createAuditLog(input: AuditLogInput): Promise<void> {
-  const { metadata, ...rest } = input;
+  const { metadata: rawMetadata, ...rest } = input;
+  const metadata = rawMetadata ? sanitizeMetadata(rawMetadata) : undefined;
 
   await prisma.auditLog.create({
     data: {

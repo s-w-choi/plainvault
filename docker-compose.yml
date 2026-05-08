@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: docker/Dockerfile.app
     ports:
-      - "3000:3000"
+      - "13000:3000"
     environment:
       - NODE_ENV=production
       - DATABASE_URL=file:/app/prisma/data/vault.db
@@ -25,7 +25,7 @@ services:
       context: .
       dockerfile: docker/Dockerfile.web
     ports:
-      - "3001:3000"
+      - "13001:3001"
     environment:
       - NODE_ENV=production
     restart: unless-stopped

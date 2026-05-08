@@ -64,6 +64,7 @@ export async function verifyApiKey(key: string): Promise<{ valid: boolean; apiKe
 
   const apiKey = await prisma.apiKey.findFirst({
     where: { keyHash },
+    include: { createdBy: { select: { status: true } } },
   });
 
   if (!apiKey) {
@@ -76,6 +77,10 @@ export async function verifyApiKey(key: string): Promise<{ valid: boolean; apiKe
 
   if (new Date() > apiKey.expiresAt) {
     return { valid: false, error: 'API_KEY_EXPIRED' };
+  }
+
+  if (!apiKey.createdBy || apiKey.createdBy.status !== 'APPROVED') {
+    return { valid: false, error: 'API_KEY_OWNER_INACTIVE' };
   }
 
   return { valid: true, apiKeyId: apiKey.id };

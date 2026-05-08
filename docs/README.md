@@ -50,7 +50,7 @@ Copy `.env.example` to `.env` and configure:
 DATABASE_URL="file:./data/vault.db"
 SESSION_SECRET="replace-with-random-session-secret-min-32-chars"
 VAULT_ENCRYPTION_KEY="replace-with-32-byte-base64-encoded-key"
-APP_BASE_URL="http://localhost:3000"
+APP_BASE_URL="http://localhost:13000"
 NODE_ENV="development"
 DEFAULT_API_KEY_TTL_DAYS="90"
 MAX_FILE_CONTENT_BYTES="1048576"

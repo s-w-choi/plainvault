@@ -1,10 +1,10 @@
 /**
  * E2E Smoke Test Script
- * Runs against live server at http://localhost:3001
+ * Runs against live server at http://localhost:13001
  * Usage: pnpm smoke:e2e
  */
 
-const BASE = process.env.SMOKE_BASE || "http://localhost:3000";
+const BASE = process.env.SMOKE_BASE || "http://localhost:13000";
 
 async function apiReq(method: string, path: string, body?: object, cookie?: string) {
   const opts: RequestInit = {

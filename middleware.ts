@@ -9,6 +9,16 @@ const PUBLIC_API_ROUTES = [
 const MUTATION_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
 
 export function middleware(request: NextRequest) {
+  // Enforce HTTPS in production
+  if (process.env.NODE_ENV === 'production') {
+    const proto = request.headers.get('x-forwarded-proto');
+    if (proto && proto !== 'https') {
+      const httpsUrl = new URL(request.url);
+      httpsUrl.protocol = 'https:';
+      return NextResponse.redirect(httpsUrl, 301);
+    }
+  }
+
   const { pathname } = request.nextUrl;
 
   if (!pathname.startsWith('/api/')) {

@@ -27,15 +27,14 @@ export async function GET(
       targetType: 'VaultFile', targetId: id, ipAddress: ip, userAgent,
       metadata: { title: file.title },
     });
-    const response = NextResponse.json({
-      file: {
-        id: file.id, title: file.title, actualFileName: file.actualFileName,
-        contentType: file.contentType, content: decrypt(file.encryptedContent),
-        contentSha256: file.contentSha256,
-        createdAt: formatKST(file.createdAt), updatedAt: formatKST(file.updatedAt),
-        category: file.category, createdBy: file.createdBy, updatedBy: file.updatedBy,
-      },
-    });
+const response = NextResponse.json({
+    file: {
+      id: file.id, title: file.title, actualFileName: file.actualFileName,
+      contentType: file.contentType, content: decrypt(file.encryptedContent),
+      createdAt: formatKST(file.createdAt), updatedAt: formatKST(file.updatedAt),
+      category: file.category, createdBy: file.createdBy, updatedBy: file.updatedBy,
+    },
+  });
     response.headers.set('Cache-Control', 'no-store');
     return response;
   }
@@ -52,7 +51,6 @@ export async function GET(
     file: {
       id: file.id, title: file.title, actualFileName: file.actualFileName,
       contentType: file.contentType, content: maskedContent,
-      contentSha256: file.contentSha256,
       createdAt: formatKST(file.createdAt), updatedAt: formatKST(file.updatedAt),
       category: file.category, createdBy: file.createdBy, updatedBy: file.updatedBy,
     },

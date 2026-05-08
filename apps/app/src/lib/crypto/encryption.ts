@@ -1,10 +1,12 @@
 import crypto from 'node:crypto';
 
 const ALGORITHM = 'aes-256-gcm';
-const IV_LENGTH = 16;
+const IV_LENGTH_V2 = 12; // GCM standard (NIST SP 800-38D)
+const IV_LENGTH_V1 = 16; // Legacy
 const AUTH_TAG_LENGTH = 16;
 const SALT_LENGTH = 32;
 const KEY_LENGTH = 32;
+const ENVELOPE_VERSION = 1; // Version byte for new ciphertext
 
 function getEncryptionKey(): Buffer {
   const key = process.env.VAULT_ENCRYPTION_KEY;
@@ -20,12 +22,23 @@ function getEncryptionKey(): Buffer {
   return keyBuffer;
 }
 
-export function encrypt(plaintext: string): string {
+export interface EncryptOptions {
+  aad?: string;
+}
+
+export function encrypt(plaintext: string, options?: EncryptOptions): string {
   const key = getEncryptionKey();
-  const iv = crypto.randomBytes(IV_LENGTH);
+  const iv = crypto.randomBytes(IV_LENGTH_V2);
   const salt = crypto.randomBytes(SALT_LENGTH);
   const derivedKey = crypto.pbkdf2Sync(key, salt, 100000, KEY_LENGTH, 'sha256');
-  const cipher = crypto.createCipheriv(ALGORITHM, derivedKey, iv);
+
+  const cipher = crypto.createCipheriv(ALGORITHM, derivedKey, iv, {
+    authTagLength: AUTH_TAG_LENGTH,
+  });
+
+  if (options?.aad) {
+    cipher.setAAD(Buffer.from(options.aad, 'utf8'));
+  }
 
   const encrypted = Buffer.concat([
     cipher.update(plaintext, 'utf8'),
@@ -34,32 +47,61 @@ export function encrypt(plaintext: string): string {
 
   const authTag = cipher.getAuthTag();
 
-  const saltAndIvAndTagAndEncrypted = Buffer.concat([
+  const versionByte = Buffer.alloc(1);
+  versionByte[0] = ENVELOPE_VERSION;
+
+  return Buffer.concat([
+    versionByte,
     salt,
     iv,
     authTag,
     encrypted,
-  ]);
-
-  return saltAndIvAndTagAndEncrypted.toString('base64');
+  ]).toString('base64');
 }
 
-export function decrypt(encryptedData: string): string {
+export interface DecryptOptions {
+  aad?: string;
+}
+
+export function decrypt(encryptedData: string, options?: DecryptOptions): string {
   const key = getEncryptionKey();
   const buffer = Buffer.from(encryptedData, 'base64');
 
-  const salt = buffer.subarray(0, SALT_LENGTH);
-  const iv = buffer.subarray(SALT_LENGTH, SALT_LENGTH + IV_LENGTH);
-  const authTag = buffer.subarray(
-    SALT_LENGTH + IV_LENGTH,
-    SALT_LENGTH + IV_LENGTH + AUTH_TAG_LENGTH
-  );
-  const encrypted = buffer.subarray(SALT_LENGTH + IV_LENGTH + AUTH_TAG_LENGTH);
+  let offset = 0;
+  const firstByte = buffer[0];
+  let ivLength: number;
+  let isVersioned = false;
+
+  if (firstByte === ENVELOPE_VERSION) {
+    isVersioned = true;
+    offset = 1;
+    ivLength = IV_LENGTH_V2;
+  } else {
+    offset = 0;
+    ivLength = IV_LENGTH_V1;
+  }
+
+  const salt = buffer.subarray(offset, offset + SALT_LENGTH);
+  offset += SALT_LENGTH;
+
+  const iv = buffer.subarray(offset, offset + ivLength);
+  offset += ivLength;
+
+  const authTag = buffer.subarray(offset, offset + AUTH_TAG_LENGTH);
+  offset += AUTH_TAG_LENGTH;
+
+  const encrypted = buffer.subarray(offset);
 
   const derivedKey = crypto.pbkdf2Sync(key, salt, 100000, KEY_LENGTH, 'sha256');
 
-  const decipher = crypto.createDecipheriv(ALGORITHM, derivedKey, iv);
+  const decipher = crypto.createDecipheriv(ALGORITHM, derivedKey, iv, {
+    authTagLength: AUTH_TAG_LENGTH,
+  });
   decipher.setAuthTag(authTag);
+
+  if (options?.aad && isVersioned) {
+    decipher.setAAD(Buffer.from(options.aad, 'utf8'));
+  }
 
   const decrypted = Buffer.concat([
     decipher.update(encrypted),

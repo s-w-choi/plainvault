@@ -9,7 +9,6 @@ export interface FileSelect {
   title: string;
   actualFileName: string;
   contentType: string;
-  contentSha256: string;
   createdAt: Date;
   updatedAt: Date;
   category: { id: string; name: string; color: string } | null;
@@ -23,7 +22,6 @@ function formatFile(f: FileSelect) {
     title: f.title,
     actualFileName: f.actualFileName,
     contentType: f.contentType,
-    contentSha256: f.contentSha256,
     createdAt: formatKST(f.createdAt),
     updatedAt: formatKST(f.updatedAt),
     category: f.category,
@@ -49,7 +47,6 @@ export async function listFiles(search = '', categoryId = '') {
       title: true,
       actualFileName: true,
       contentType: true,
-      contentSha256: true,
       createdAt: true,
       updatedAt: true,
       category: { select: { id: true, name: true, color: true } },
@@ -96,6 +93,7 @@ export async function createFile(
       actualFileName,
       encryptedContent,
       contentSha256: sha256,
+      keyVersion: 1,
       contentType,
       categoryId: categoryId || null,
       createdById: ctx.userId,
@@ -114,6 +112,7 @@ export async function createFile(
       revisionNumber: 1,
       encryptedContentAfter: encryptedContent,
       contentSha256After: sha256,
+      keyVersion: 1,
       changeSummary: 'Initial creation',
       changedById: ctx.userId,
     },
@@ -199,6 +198,7 @@ export async function updateFile(
       encryptedContentAfter,
       contentSha256Before: sha256Before,
       contentSha256After: sha256After,
+      keyVersion: 1,
       changeSummary: data.changeSummary,
       changedById: ctx.userId,
     },

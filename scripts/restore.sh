@@ -10,7 +10,7 @@ DB_FILE="${DATA_DIR}/vault.db"
 if [ $# -lt 1 ]; then
   echo "Usage: $0 <backup_file>"
   echo "Available backups:"
-  ls -1 "${BACKUP_DIR}"/vault_*.db 2>/dev/null || echo "  (none)"
+  { ls -1 "${BACKUP_DIR}"/vault_*.db 2>/dev/null || echo "  (none)"; } && { ls -1 "${BACKUP_DIR}"/vault_*.db.gpg 2>/dev/null | sed 's/$/ (encrypted)/' || true; }
   exit 1
 fi
 
@@ -22,6 +22,23 @@ if [ ! -f "${BACKUP_FILE}" ]; then
     echo "Error: Backup file not found: $1"
     exit 1
   fi
+fi
+
+# Handle encrypted backups
+if [[ "${BACKUP_FILE}" == *.gpg ]]; then
+  if ! command -v gpg &>/dev/null; then
+    echo "Error: GPG is required to restore encrypted backups"
+    exit 1
+  fi
+  if [ -z "${BACKUP_ENCRYPTION_PASSPHRASE:-}" ]; then
+    echo "Error: BACKUP_ENCRYPTION_PASSPHRASE is required to restore encrypted backups"
+    exit 1
+  fi
+  DECRYPTED_FILE="${BACKUP_FILE%.gpg}"
+  echo "Decrypting backup..."
+  gpg --batch --yes --decrypt --passphrase "${BACKUP_ENCRYPTION_PASSPHRASE}" -o "${DECRYPTED_FILE}" "${BACKUP_FILE}"
+  BACKUP_FILE="${DECRYPTED_FILE}"
+  trap "rm -f '${DECRYPTED_FILE}'" EXIT
 fi
 
 if ! sqlite3 "${BACKUP_FILE}" "PRAGMA integrity_check;" | grep -q "ok"; then

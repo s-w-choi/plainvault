@@ -8,7 +8,7 @@ import { AppHeader } from "@/components/app-header";
 
 const CODE_EXAMPLES: Record<string, { bash: string; js: string; python: string }> = {
   "POST /api/auth/register": {
-    bash: `curl -X POST http://localhost:3000/api/auth/register \\
+    bash: `curl -X POST http://localhost:13000/api/auth/register \\
   -H "Content-Type: application/json" \\
   -d '{
     "name": "John Doe",
@@ -32,7 +32,7 @@ const data = await res.json();
 
 # Register a new account
 # New accounts are PENDING until admin approves
-res = requests.post('http://localhost:3000/api/auth/register', json={
+res = requests.post('http://localhost:13000/api/auth/register', json={
     'name': 'John Doe',
     'email': 'user@example.com',
     'password': 'Pass123!'
@@ -41,7 +41,7 @@ print(res.json())
 # {'message': 'Registration accepted', 'user': {...}}`,
   },
   "POST /api/auth/login": {
-    bash: `curl -X POST http://localhost:3000/api/auth/login \\
+    bash: `curl -X POST http://localhost:13000/api/auth/login \\
   -H "Content-Type: application/json" \\
   -c cookies.txt \\
   -d '{
@@ -67,7 +67,7 @@ const { user } = await res.json();
 session = requests.Session()  # ← persist cookies automatically
 
 # Authenticate and receive session cookies
-res = session.post('http://localhost:3000/api/auth/login', json={
+res = session.post('http://localhost:13000/api/auth/login', json={
     'email': 'admin@internal.local',
     'password': 'admin123'
 })
@@ -75,7 +75,7 @@ print(res.json())
 # { user: { id, name, email, role, status } }`,
   },
   "POST /api/auth/logout": {
-    bash: `curl -X POST http://localhost:3000/api/auth/logout \\
+    bash: `curl -X POST http://localhost:13000/api/auth/logout \\
   -b cookies.txt`,
     js: `// Sign out the current user
 await fetch('/api/auth/logout', {
@@ -83,10 +83,10 @@ await fetch('/api/auth/logout', {
   credentials: 'include'
 });`,
     python: `# Invalidate the current session
-session.post('http://localhost:3000/api/auth/logout')`,
+session.post('http://localhost:13000/api/auth/logout')`,
   },
   "GET /api/auth/me": {
-    bash: `curl http://localhost:3000/api/auth/me \\
+    bash: `curl http://localhost:13000/api/auth/me \\
   -b cookies.txt`,
     js: `// Get the currently authenticated user
 const res = await fetch('/api/auth/me', {
@@ -96,13 +96,13 @@ const { user } = await res.json();
 // { user: { id, email, name, role, status } }
 // Returns 401 if not logged in`,
     python: `# Get the currently authenticated user
-res = session.get('http://localhost:3000/api/auth/me')
+res = session.get('http://localhost:13000/api/auth/me')
 print(res.json())
 # {'user': {'id': ..., 'email': '...', 'role': '...'}}
 # Returns 401 if not logged in`,
   },
   "GET /api/files": {
-    bash: `curl "http://localhost:3000/api/files?search=config&categoryId=..." \\
+    bash: `curl "http://localhost:13000/api/files?search=config&categoryId=..." \\
   -b cookies.txt`,
     js: `// List all files (filtered by search/category)
 // Supports query params: search, categoryId
@@ -113,7 +113,7 @@ const { files, categories } = await res.json();
 // files: [{ id, title, actualFileName, contentType, category, updatedAt }, ...]
 // categories: [{ id, name, color }, ...]`,
     python: `# List all files
-res = session.get('http://localhost:3000/api/files', params={
+res = session.get('http://localhost:13000/api/files', params={
     'search': 'config',
     'categoryId': 'uuid'
 })
@@ -122,7 +122,7 @@ print(data['files'])
 print(data['categories'])`,
   },
   "POST /api/files": {
-    bash: `curl -X POST http://localhost:3000/api/files \\
+    bash: `curl -X POST http://localhost:13000/api/files \\
   -H "Content-Type: application/json" \\
   -b cookies.txt \\
   -d '{
@@ -148,7 +148,7 @@ const res = await fetch('/api/files', {
 const { file } = await res.json();
 // file: { id, title, actualFileName, contentType, category, createdAt }`,
     python: `# Create a new vault file (DEVELOPER+ only)
-res = session.post('http://localhost:3000/api/files', json={
+res = session.post('http://localhost:13000/api/files', json={
     'title': 'API Keys',
     'actualFileName': '.env',
     'contentType': 'env',
@@ -158,7 +158,7 @@ res = session.post('http://localhost:3000/api/files', json={
 print(res.json()['file'])`,
   },
   "GET /api/files/[id]": {
-    bash: `curl http://localhost:3000/api/files/{id} \\
+    bash: `curl http://localhost:13000/api/files/{id} \\
   -b cookies.txt`,
     js: `// Get file metadata and content (masked for VIEWER)
 // VIEWER sees masked content; DEVELOPER/ADMIN see full
@@ -168,11 +168,11 @@ const res = await fetch('/api/files/{id}', {
 const { file } = await res.json();
 // file: { id, title, content, contentType, category, updatedBy, updatedAt }`,
     python: `# Get file metadata and content (masked for VIEWER)
-res = session.get('http://localhost:3000/api/files/{id}')
+res = session.get('http://localhost:13000/api/files/{id}')
 print(res.json()['file'])`,
   },
   "PATCH /api/files/[id]": {
-    bash: `curl -X PATCH http://localhost:3000/api/files/{id} \\
+    bash: `curl -X PATCH http://localhost:13000/api/files/{id} \\
   -H "Content-Type: application/json" \\
   -b cookies.txt \\
   -d '{
@@ -195,13 +195,13 @@ const { file } = await res.json();`,
     python: `# Update file content (DEVELOPER+ only)
 # Creates a new revision automatically
 # changeSummary is REQUIRED
-res = session.patch('http://localhost:3000/api/files/{id}', json={
+res = session.patch('http://localhost:13000/api/files/{id}', json={
     'content': 'UPDATED content here',
     'changeSummary': 'Updated API key value'  # ← required
 })`,
   },
   "DELETE /api/files/[id]": {
-    bash: `curl -X DELETE http://localhost:3000/api/files/{id} \\
+    bash: `curl -X DELETE http://localhost:13000/api/files/{id} \\
   -b cookies.txt`,
     js: `// Soft-delete a file (ADMIN only)
 // File is not permanently deleted — can be recovered
@@ -212,10 +212,10 @@ await fetch('/api/files/{id}', {
 // Returns 200 on success, 403 if not ADMIN`,
     python: `# Soft-delete a file (ADMIN only)
 # File is not permanently deleted
-session.delete('http://localhost:3000/api/files/{id}')`,
+session.delete('http://localhost:13000/api/files/{id}')`,
   },
   "GET /api/files/[id]/raw": {
-    bash: `curl http://localhost:3000/api/files/{id}/raw -b cookies.txt`,
+    bash: `curl http://localhost:13000/api/files/{id}/raw -b cookies.txt`,
     js: `// Get unmasked file content
 // VIEWER receives 403 Forbidden
 // DEVELOPER/ADMIN receive full content
@@ -230,14 +230,14 @@ if (res.status === 403) {
 }`,
     python: `# Get unmasked file content
 # VIEWER receives 403 Forbidden
-res = session.get('http://localhost:3000/api/files/{id}/raw')
+res = session.get('http://localhost:13000/api/files/{id}/raw')
 if res.status_code == 403:
     print('VIEWER cannot access raw content')
 else:
     print(res.json()['content'])`,
   },
   "GET /api/files/[id]/revisions": {
-    bash: `curl http://localhost:3000/api/files/{id}/revisions \\
+    bash: `curl http://localhost:13000/api/files/{id}/revisions \\
   -b cookies.txt`,
     js: `// Get file revision history (DEVELOPER+ only)
 const res = await fetch('/api/files/{id}/revisions', {
@@ -246,11 +246,11 @@ const res = await fetch('/api/files/{id}/revisions', {
 const { revisions } = await res.json();
 // revisions: [{ revisionNumber, changeSummary, changedBy, changedAt }, ...]`,
     python: `# Get file revision history (DEVELOPER+ only)
-res = session.get('http://localhost:3000/api/files/{id}/revisions')
+res = session.get('http://localhost:13000/api/files/{id}/revisions')
 print(res.json()['revisions'])`,
   },
   "GET /api/files/[id]/revisions/[revisionId]/diff": {
-    bash: `curl "http://localhost:3000/api/files/{id}/revisions/{revisionId}/diff" \\
+    bash: `curl "http://localhost:13000/api/files/{id}/revisions/{revisionId}/diff" \\
   -b cookies.txt`,
     js: `// Get diff between current and specific revision
 const res = await fetch(
@@ -261,12 +261,12 @@ const { diff } = await res.json();
 // diff: { currentContent, revisionContent, changes: [...] }`,
     python: `# Get diff between current and specific revision
 res = session.get(
-    'http://localhost:3000/api/files/{id}/revisions/{revisionId}/diff'
+    'http://localhost:13000/api/files/{id}/revisions/{revisionId}/diff'
 )
 print(res.json()['diff'])`,
   },
   "GET /api/admin/categories": {
-    bash: `curl http://localhost:3000/api/admin/categories \\
+    bash: `curl http://localhost:13000/api/admin/categories \\
   -b cookies.txt`,
     js: `// List all categories with file counts (ADMIN only)
 const res = await fetch('/api/admin/categories', {
@@ -275,11 +275,11 @@ const res = await fetch('/api/admin/categories', {
 const { categories } = await res.json();
 // categories: [{ id, name, color, fileCount }, ...]`,
     python: `# List all categories with file counts (ADMIN only)
-res = session.get('http://localhost:3000/api/admin/categories')
+res = session.get('http://localhost:13000/api/admin/categories')
 print(res.json()['categories'])`,
   },
   "POST /api/admin/categories": {
-    bash: `curl -X POST http://localhost:3000/api/admin/categories \\
+    bash: `curl -X POST http://localhost:13000/api/admin/categories \\
   -H "Content-Type: application/json" \\
   -b cookies.txt \\
   -d '{"name": "Production", "color": "#ef4444"}'`,
@@ -295,14 +295,14 @@ const res = await fetch('/api/admin/categories', {
 });
 const { category } = await res.json();`,
     python: `# Create a new category (ADMIN only)
-res = session.post('http://localhost:3000/api/admin/categories', json={
+res = session.post('http://localhost:13000/api/admin/categories', json={
     'name': 'Production',
     'color': '#ef4444'
 })
 print(res.json()['category'])`,
   },
   "DELETE /api/admin/categories/[id]": {
-    bash: `curl -X DELETE http://localhost:3000/api/admin/categories/{id} \\
+    bash: `curl -X DELETE http://localhost:13000/api/admin/categories/{id} \\
   -b cookies.txt`,
     js: `// Delete a category (ADMIN only)
 // Fails if category has assigned files
@@ -312,10 +312,10 @@ await fetch('/api/admin/categories/{id}', {
 });`,
     python: `# Delete a category (ADMIN only)
 # Fails if category has assigned files
-session.delete('http://localhost:3000/api/admin/categories/{id}')`,
+session.delete('http://localhost:13000/api/admin/categories/{id}')`,
   },
   "GET /api/admin/api-keys": {
-    bash: `curl http://localhost:3000/api/admin/api-keys -b cookies.txt`,
+    bash: `curl http://localhost:13000/api/admin/api-keys -b cookies.txt`,
     js: `// List all API keys (ADMIN only)
 // Raw key is NOT returned — only keyPrefix for security
 const res = await fetch('/api/admin/api-keys', {
@@ -325,11 +325,11 @@ const { apiKeys } = await res.json();
 // apiKeys: [{ id, name, keyPrefix, status, expiresAt, createdAt }, ...]`,
     python: `# List all API keys (ADMIN only)
 # Raw key is NOT returned — only keyPrefix for security
-res = session.get('http://localhost:3000/api/admin/api-keys')
+res = session.get('http://localhost:13000/api/admin/api-keys')
 print(res.json()['apiKeys'])`,
   },
   "POST /api/admin/api-keys": {
-    bash: `curl -X POST http://localhost:3000/api/admin/api-keys \\
+    bash: `curl -X POST http://localhost:13000/api/admin/api-keys \\
   -H "Content-Type: application/json" \\
   -b cookies.txt \\
   -d '{"name": "CI/CD Pipeline", "expiresInDays": 90}'`,
@@ -350,7 +350,7 @@ const { apiKey } = await res.json();
 // ⚠️ apiKey.key is shown ONLY here — store it now!`,
     python: `# Create an API key (ADMIN only)
 # ⚠️ The raw key is returned ONLY in this response
-res = session.post('http://localhost:3000/api/admin/api-keys', json={
+res = session.post('http://localhost:13000/api/admin/api-keys', json={
     'name': 'CI/CD Pipeline',
     'expiresInDays': 90
 })
@@ -359,7 +359,7 @@ print(f"Key prefix: {api_key['keyPrefix']}")
 raw_key = api_key['key']  # ← store this now, shown only once!`,
   },
   "DELETE /api/admin/api-keys/[id]": {
-    bash: `curl -X DELETE http://localhost:3000/api/admin/api-keys/{id} \\
+    bash: `curl -X DELETE http://localhost:13000/api/admin/api-keys/{id} \\
   -b cookies.txt`,
     js: `// Revoke an API key immediately (ADMIN only)
 // After revocation, the key can no longer be used for authentication
@@ -369,10 +369,10 @@ await fetch('/api/admin/api-keys/{id}', {
 });`,
     python: `# Revoke an API key immediately (ADMIN only)
 # After revocation, the key cannot authenticate
-session.delete('http://localhost:3000/api/admin/api-keys/{id}')`,
+session.delete('http://localhost:13000/api/admin/api-keys/{id}')`,
   },
   "GET /api/admin/users": {
-    bash: `curl http://localhost:3000/api/admin/users -b cookies.txt`,
+    bash: `curl http://localhost:13000/api/admin/users -b cookies.txt`,
     js: `// List all users with their status and role
 const res = await fetch('/api/admin/users', {
   credentials: 'include'
@@ -382,11 +382,11 @@ const { users } = await res.json();
 // status: PENDING | APPROVED | REJECTED
 // role: ADMIN | DEVELOPER | VIEWER`,
     python: `# List all users
-res = session.get('http://localhost:3000/api/admin/users')
+res = session.get('http://localhost:13000/api/admin/users')
 print(res.json()['users'])`,
   },
   "POST /api/admin/users/[id]/approve": {
-    bash: `curl -X POST http://localhost:3000/api/admin/users/{id}/approve \\
+    bash: `curl -X POST http://localhost:13000/api/admin/users/{id}/approve \\
   -H "Content-Type: application/json" \\
   -b cookies.txt \\
   -d '{"role": "DEVELOPER"}'`,
@@ -401,12 +401,12 @@ await fetch('/api/admin/users/{id}/approve', {
 });`,
     python: `# Approve a pending user and assign a role (ADMIN only)
 session.post(
-    'http://localhost:3000/api/admin/users/{id}/approve',
+    'http://localhost:13000/api/admin/users/{id}/approve',
     json={'role': 'DEVELOPER'}  # VIEWER | DEVELOPER | ADMIN
 )`,
   },
   "POST /api/admin/users/[id]/reject": {
-    bash: `curl -X POST http://localhost:3000/api/admin/users/{id}/reject \\
+    bash: `curl -X POST http://localhost:13000/api/admin/users/{id}/reject \\
   -H "Content-Type: application/json" \\
   -b cookies.txt \\
   -d '{"reason": "Access denied"}'`,
@@ -420,12 +420,12 @@ await fetch('/api/admin/users/{id}/reject', {
 });`,
     python: `# Reject a pending user (ADMIN only)
 session.post(
-    'http://localhost:3000/api/admin/users/{id}/reject',
+    'http://localhost:13000/api/admin/users/{id}/reject',
     json={'reason': 'Access denied'}  # optional
 )`,
   },
   "GET /api/admin/audit-logs": {
-    bash: `curl http://localhost:3000/api/admin/audit-logs \\
+    bash: `curl http://localhost:13000/api/admin/audit-logs \\
   -b cookies.txt`,
     js: `// Get audit trail (ADMIN only)
 // Includes: event type, actor, target, time, success/fail
@@ -435,11 +435,11 @@ const res = await fetch('/api/admin/audit-logs', {
 const { auditLogs } = await res.json();
 // auditLogs: [{ id, eventType, actorId, targetType, targetId, success, createdAt }, ...]`,
     python: `# Get audit trail (ADMIN only)
-res = session.get('http://localhost:3000/api/admin/audit-logs')
+res = session.get('http://localhost:13000/api/admin/audit-logs')
 print(res.json()['auditLogs'])`,
   },
   "PATCH /api/auth/password": {
-    bash: `curl -X PATCH http://localhost:3000/api/auth/password \\
+    bash: `curl -X PATCH http://localhost:13000/api/auth/password \\
   -H "Content-Type: application/json" \\
   -b cookies.txt \\
   -d '{
@@ -460,7 +460,7 @@ const res = await fetch('/api/auth/password', {
 const data = await res.json();
 // { message: "Password updated successfully" } on success`,
     python: `# Change your password
-res = session.patch('http://localhost:3000/api/auth/password', json={
+res = session.patch('http://localhost:13000/api/auth/password', json={
     'currentPassword': 'old123',
     'newPassword': 'new123456'  # min 8 characters
 })
@@ -663,7 +663,7 @@ export default function ApiDocsPage() {
               <div className="space-y-6">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <h3 className="font-medium text-blue-800 mb-2">Base URL</h3>
-                  <code className="text-sm font-mono text-blue-700">http://localhost:3000</code>
+                  <code className="text-sm font-mono text-blue-700">http://localhost:13000</code>
                   <p className="mt-2 text-sm text-blue-700">
                     All endpoints are relative to this URL. Include cookies in requests via{' '}
                     <code className="bg-blue-100 px-1 rounded">credentials: &apos;include&apos;</code> (fetch) or{' '}

@@ -25,7 +25,7 @@ PRISMA_SCHEMA := prisma/schema.prisma
 
 # --- Phony Targets -------------------------------------------------------------
 
-.PHONY: help install run migrate reset db-studio test check docker-landing docker-service
+.PHONY: help install run migrate reset db-studio test check docker-landing docker-service deploy-web deploy-web-preview
 
 # --- Targets -------------------------------------------------------------------
 
@@ -41,7 +41,7 @@ install:
 	$(PKG_MANAGER) db:migrate
 	@echo "==> Install complete."
 
-## Run: Start all apps in parallel (web@3001 landing, app@3000 main service)
+## Run: Start all apps in parallel (web@13001 landing, app@13000 main service)
 run:
 	$(PKG_MANAGER) dev
 
@@ -82,12 +82,20 @@ seed:
 ## docker-landing: Build and run landing page (web) Docker container
 docker-landing:
 	docker build -f docker/Dockerfile.web -t plainvault-web .
-	docker run -p 3001:3001 plainvault-web
+	docker run -p 13001:3001 plainvault-web
 
 ## docker-service: Build and run main service (app) Docker container
 docker-service:
 	docker build -f docker/Dockerfile.app -t plainvault-app .
-	docker run -p 3000:3000 plainvault-app
+	docker run -p 13000:3000 plainvault-app
+
+## deploy-web: Deploy landing page to Vercel (production)
+deploy-web:
+	@bash scripts/deploy-web.sh
+
+## deploy-web-preview: Deploy landing page to Vercel (preview)
+deploy-web-preview:
+	@bash scripts/deploy-web.sh --preview
 
 # --- Help ----------------------------------------------------------------------
 

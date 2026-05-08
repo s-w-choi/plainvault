@@ -44,6 +44,7 @@ model VaultFile {
   actualFileName   String
   encryptedContent String
   contentSha256    String
+  keyVersion       Int       @default(1)
   contentType      String    @default("text")
   categoryId       String?
   createdById      String
@@ -72,6 +73,7 @@ model FileRevision {
   encryptedContentAfter  String
   contentSha256Before  String?
   contentSha256After   String
+  keyVersion          Int      @default(1)
   changeSummary        String
   changedById          String
   changedAt           DateTime @default(now())

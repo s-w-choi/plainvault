@@ -31,4 +31,31 @@ describe('Masking', () => {
     const masked = maskContent(content, 'markdown');
     expect(masked).not.toContain('secret123');
   });
+
+  it('masks KEY: value (colon separator) patterns', () => {
+    const content = 'API_KEY: sk-live-abc123\nDATABASE_URL: postgres://user:pass@localhost';
+    const masked = maskContent(content, 'env');
+    expect(masked).toContain('API_KEY:********');
+    expect(masked).toContain('DATABASE_URL:********');
+    expect(masked).not.toContain('sk-live-abc123');
+    expect(masked).not.toContain('pass');
+  });
+
+  it('masks consecutive lines correctly (no g flag state issue)', () => {
+    const content = 'API_KEY=sk-test-111\nTOKEN=abc222\nSECRET=xyz333\nAPI_KEY=sk-test-444';
+    const masked = maskContent(content, 'env');
+    expect(masked).toContain('API_KEY=********');
+    expect(masked).toContain('TOKEN=********');
+    expect(masked).toContain('SECRET=********');
+    expect(masked).not.toContain('sk-test-111');
+    expect(masked).not.toContain('abc222');
+    expect(masked).not.toContain('xyz333');
+    expect(masked).not.toContain('sk-test-444');
+  });
+
+  it('masks YAML-style key: value in general content', () => {
+    const content = 'database:\n  host: localhost\n  password: supersecret123';
+    const masked = maskContent(content, 'yaml');
+    expect(masked).not.toContain('supersecret123');
+  });
 });
