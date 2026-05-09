@@ -28,8 +28,8 @@ VAULT_ENCRYPTION_KEY must be:
 
 ## Password Security
 
-- **Algorithm**: bcrypt
-- **Work Factor**: 12 iterations
+- **Algorithm**: Argon2id
+- **Configuration**: argon2id variant (memory-hard, resistant to GPU attacks)
 - **Storage**: Only hash stored, never plaintext
 
 ## API Key Security
@@ -43,8 +43,8 @@ VAULT_ENCRYPTION_KEY must be:
 ## Session Security
 
 - **Cookie**: httpOnly, sameSite=lax
-- **Secure**: Only in production
-- **Max Age**: 7 days
+- **Secure**: Controlled by `COOKIE_SECURE` env var (set to `true` for HTTPS)
+- **Max Age**: 7 days (configurable via admin settings)
 - **Renewal**: On login
 
 ## Secret Masking

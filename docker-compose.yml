@@ -15,6 +15,7 @@ services:
       # - VAULT_ENCRYPTION_KEY=your-base64-encoded-32-byte-key
       - INIT_ADMIN_EMAIL=admin@plainvault.local
       - INIT_ADMIN_PASSWORD=plainvault-admin
+      - COOKIE_SECURE=false
     volumes:
       - vault-data:/app/prisma/data
     restart: unless-stopped

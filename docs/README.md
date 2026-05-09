@@ -20,7 +20,7 @@ Internal network-only Secret and Markdown Vault for managing .env files, configu
 - **Database**: SQLite via Prisma ORM
 - **UI**: React + Tailwind CSS
 - **Encryption**: AES-256-GCM with PBKDF2 key derivation
-- **Password Hashing**: bcrypt
+- **Password Hashing**: Argon2id
 - **Markdown Rendering**: marked + sanitize-html
 
 ## Setup

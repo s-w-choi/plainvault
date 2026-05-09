@@ -119,13 +119,36 @@ function QuickStartCard() {
       <CardContent>
         <div className="space-y-5">
           <div>
-            <p className="text-sm text-gray-600 mb-2">1. Pull the image</p>
-            <CodeBlock lines={["# TODO: Update image name after Docker publish", "docker pull boydchoi/plainvault:latest"]} />
+            <p className="text-sm text-gray-600 mb-2">Option A: Docker Compose (recommended)</p>
+            <pre
+              className="bg-gray-900 text-white text-xs rounded-lg p-4 overflow-x-auto font-mono"
+              style={{ whiteSpace: 'pre', wordBreak: 'break-all', userSelect: 'all' }}
+            >{`# Clone the repository
+git clone https://github.com/s-w-choi/plainvault.git
+cd plainvault
+
+# Build and start all services
+docker compose up -d
+
+# App: http://localhost:13000
+# Web: http://localhost:13001`}</pre>
           </div>
           <div>
-            <p className="text-sm text-gray-600 mb-2">2. Run the container</p>
-            <CodeBlock lines={["docker run -d \\", "  --name plainvault \\", "  -p 13000:3000 \\", "  -e ENCRYPTION_KEY=\"your-encryption-key\" \\", "  -v plainvault-data:/app/data \\", "  boydchoi/plainvault:latest"]} />
+            <p className="text-sm text-gray-600 mb-2">Option B: Docker run (app only)</p>
+            <pre
+              className="bg-gray-900 text-white text-xs rounded-lg p-4 overflow-x-auto font-mono"
+              style={{ whiteSpace: 'pre', wordBreak: 'break-all', userSelect: 'all' }}
+            >{`docker build -f docker/Dockerfile.app -t plainvault .
+
+docker run -d \\
+  --name plainvault \\
+  -p 13000:3000 \\
+  -v plainvault-data:/app/prisma/data \\
+  plainvault`}</pre>
           </div>
+          <p className="text-xs text-gray-500">
+            The encryption key is auto-generated on first run and persisted in the data volume. To provide your own, set <code className="bg-gray-100 px-1 rounded">VAULT_ENCRYPTION_KEY</code>.
+          </p>
         </div>
       </CardContent>
     </Card>
@@ -147,25 +170,32 @@ function EnvironmentVariablesCard() {
           </thead>
           <tbody className="text-xs text-gray-600">
             <tr className="border-b border-gray-100">
-              <td className="py-2 pr-4 font-mono text-indigo-600">ENCRYPTION_KEY</td>
-              <td className="py-2 pr-4"><span className="bg-red-100 text-red-700 px-1.5 py-0.5 rounded text-[10px] font-medium">Yes</span></td>
-              <td className="py-2">Master key for AES-256-GCM encryption</td>
+              <td className="py-2 pr-4 font-mono text-indigo-600">VAULT_ENCRYPTION_KEY</td>
+              <td className="py-2 pr-4"><span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px] font-medium">No</span></td>
+              <td className="py-2">Master key for AES-256-GCM encryption. Auto-generated on first run if not set.</td>
             </tr>
             <tr className="border-b border-gray-100">
-              <td className="py-2 pr-4 font-mono text-indigo-600">PORT</td>
+              <td className="py-2 pr-4 font-mono text-indigo-600">DATABASE_URL</td>
               <td className="py-2 pr-4"><span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px] font-medium">No</span></td>
-              <td className="py-2">Server port (default: 3000)</td>
+              <td className="py-2">Prisma database URL (default: <code className="bg-gray-100 px-1 rounded">file:/app/prisma/data/vault.db</code>)</td>
+            </tr>
+            <tr className="border-b border-gray-100">
+              <td className="py-2 pr-4 font-mono text-indigo-600">COOKIE_SECURE</td>
+              <td className="py-2 pr-4"><span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px] font-medium">No</span></td>
+              <td className="py-2">Set to <code className="bg-gray-100 px-1 rounded">true</code> to enable secure cookies (default: <code className="bg-gray-100 px-1 rounded">false</code>)</td>
+            </tr>
+            <tr className="border-b border-gray-100">
+              <td className="py-2 pr-4 font-mono text-indigo-600">INIT_ADMIN_EMAIL</td>
+              <td className="py-2 pr-4"><span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px] font-medium">No</span></td>
+              <td className="py-2">Override default admin email (default: admin@plainvault.local)</td>
             </tr>
             <tr>
-              <td className="py-2 pr-4 font-mono text-indigo-600">NODE_ENV</td>
+              <td className="py-2 pr-4 font-mono text-indigo-600">INIT_ADMIN_PASSWORD</td>
               <td className="py-2 pr-4"><span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px] font-medium">No</span></td>
-              <td className="py-2">production / development</td>
+              <td className="py-2">Override default admin password (default: plainvault-admin)</td>
             </tr>
           </tbody>
         </table>
-        <p className="mt-3 text-xs text-amber-600 bg-amber-50 rounded-md px-3 py-2">
-          TODO: Additional environment variables will be documented here after Docker publish.
-        </p>
       </CardContent>
     </Card>
   );

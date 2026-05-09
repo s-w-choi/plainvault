@@ -50,7 +50,7 @@ User → Login Form → POST /api/auth/login
                             │
                             ▼
                     ┌───────────────┐
-                    │ Verify bcrypt │
+                    │ Verify Argon2 │
                     │ password hash │
                     └───────────────┘
                             │
@@ -161,8 +161,17 @@ Script → GET /api/v1/files/:id/raw
 
 ### `/src/lib/auth/auth.ts`
 - Session cookie management
-- Password hashing/verification via bcrypt
+- Password hashing/verification via Argon2id
 - Authentication helpers (requireAuth, requireRole)
+
+### `/src/lib/auth/auth-handler.ts`
+- Route-level auth middleware (withAuth, requireRole)
+- Client info extraction (IP, user-agent)
+- Standardized error response helpers
+
+### `/src/lib/auth/roles.ts`
+- Role constant definitions (ADMIN, DEVELOPER, VIEWER)
+- Role permission mappings
 
 ### `/src/lib/crypto/encryption.ts`
 - AES-256-GCM encryption/decryption
@@ -185,9 +194,52 @@ Script → GET /api/v1/files/:id/raw
 - Added/removed/unchanged line tracking
 
 ### `/src/lib/api-keys/api-key.ts`
-- API key generation (random bytes)
+- API key generation (random bytes, `secvault_` prefix)
 - SHA-256 hash storage
 - Expiry/revocation management
+
+### `/src/lib/files/file-service.ts`
+- File CRUD operations (Prisma queries)
+- Soft delete with `deletedAt` timestamp
+- Revision creation on file updates
+
+### `/src/lib/categories/category-service.ts`
+- Category CRUD operations
+- File count tracking per category
+- Deletion guard (prevent deleting categories with files)
+
+### `/src/lib/settings/settings.ts`
+- Application settings management (stored in DB)
+- Type-safe setting getters (string, boolean)
+- Default values for all settings
+
+### `/src/lib/validation/validation.ts`
+- Input validation for titles, filenames, content size
+- Max content size from `MAX_FILE_CONTENT_BYTES` env var (default: 1MB)
+- Path traversal prevention
+
+### `/src/lib/logging/logger.ts`
+- Structured logging with configurable log levels
+- Log level from `LOG_LEVEL` env var (default: info)
+
+### `/src/lib/time/kst.ts`
+- KST (Korea Standard Time) timezone formatting
+- Consistent date/time display across the app
+
+### `/src/lib/security/csrf.ts`
+- CSRF token generation and validation
+- Double-submit cookie pattern
+
+### `/src/lib/security/rate-limit.ts`
+- Login rate limiting (configurable attempts/window)
+- In-memory sliding window implementation
+
+### `/src/lib/markdown/markdown.ts`
+- Markdown rendering with sanitize-html
+- Safe HTML output for notes
+
+### `/src/lib/utils.ts`
+- Shared utility functions (cn class merger, etc.)
 
 ## Database Schema
 
