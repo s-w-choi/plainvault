@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { CopyableCodeBlock } from "@/components/copyable-code-block";
 
 export const metadata = {
   title: "PlainVault - Get Started",
@@ -78,8 +79,16 @@ export default function GetStartedPage() {
             <div className="space-y-4 text-sm text-gray-600">
               <p>All file content is encrypted at rest using AES-256-GCM encryption. Even if the database is compromised, the content cannot be read without the encryption key.</p>
               <p>For VIEWER role users, sensitive values are automatically masked:</p>
-              <CodeBlock lines={["# Raw (DEVELOPER / ADMIN)", "DATABASE_URL=postgres://user:secret123@db.example.com:5432", "API_KEY=sk_live_abcdef123456"]} />
-              <CodeBlock lines={["# Masked (VIEWER)", "DATABASE_URL=********", "API_KEY=********"]} />
+              <CopyableCodeBlock
+                code={`# Raw (DEVELOPER / ADMIN)
+DATABASE_URL=postgres://user:secret123@db.example.com:5432
+API_KEY=sk_live_abcdef123456`}
+              />
+              <CopyableCodeBlock
+                code={`# Masked (VIEWER)
+DATABASE_URL=********
+API_KEY=********`}
+              />
             </div>
           </div>
 
@@ -120,10 +129,8 @@ function QuickStartCard() {
         <div className="space-y-5">
           <div>
             <p className="text-sm text-gray-600 mb-2">Option A: Docker Compose (recommended)</p>
-            <pre
-              className="bg-gray-900 text-white text-xs rounded-lg p-4 overflow-x-auto font-mono"
-              style={{ whiteSpace: 'pre', wordBreak: 'break-all', userSelect: 'all' }}
-            >{`# Clone the repository
+            <CopyableCodeBlock
+              code={`# Clone the repository
 git clone https://github.com/s-w-choi/plainvault.git
 cd plainvault
 
@@ -131,24 +138,33 @@ cd plainvault
 docker compose up -d
 
 # App: http://localhost:13000
-# Web: http://localhost:13001`}</pre>
+# Web: http://localhost:13001`}
+            />
           </div>
           <div>
             <p className="text-sm text-gray-600 mb-2">Option B: Docker run (app only)</p>
-            <pre
-              className="bg-gray-900 text-white text-xs rounded-lg p-4 overflow-x-auto font-mono"
-              style={{ whiteSpace: 'pre', wordBreak: 'break-all', userSelect: 'all' }}
-            >{`docker build -f docker/Dockerfile.app -t plainvault .
-
-docker run -d \\
+            <CopyableCodeBlock
+              code={`docker run -d \\
   --name plainvault \\
   -p 13000:3000 \\
+  -e VAULT_ENCRYPTION_KEY="MjM5OHh5bjQ5YXMuZDIzcWRvaG93M3lybzh5b0dJSg==" \\
+  -e INIT_ADMIN_EMAIL="admin@plainvault.local" \\
+  -e INIT_ADMIN_PASSWORD="plainvault-admin" \\
   -v plainvault-data:/app/prisma/data \\
-  plainvault`}</pre>
+  boydchoi/plainvault:latest`}
+            />
           </div>
-          <p className="text-xs text-gray-500">
-            The encryption key is auto-generated on first run and persisted in the data volume. To provide your own, set <code className="bg-gray-100 px-1 rounded">VAULT_ENCRYPTION_KEY</code>.
-          </p>
+          <div className="text-xs text-gray-500 space-y-1">
+            <p>
+              <strong>VAULT_ENCRYPTION_KEY:</strong> Provide your own random Base64-encoded 32-byte key. This key is used for AES-256-GCM encryption and should be kept secure.
+            </p>
+            <p>
+              <strong>INIT_ADMIN_EMAIL / INIT_ADMIN_PASSWORD:</strong> Set the initial admin credentials. Override defaults as needed.
+            </p>
+            <p>
+              If not provided, the encryption key is auto-generated on first run and persisted in the data volume.
+            </p>
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -178,11 +194,6 @@ function EnvironmentVariablesCard() {
               <td className="py-2 pr-4 font-mono text-indigo-600">DATABASE_URL</td>
               <td className="py-2 pr-4"><span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px] font-medium">No</span></td>
               <td className="py-2">Prisma database URL (default: <code className="bg-gray-100 px-1 rounded">file:/app/prisma/data/vault.db</code>)</td>
-            </tr>
-            <tr className="border-b border-gray-100">
-              <td className="py-2 pr-4 font-mono text-indigo-600">COOKIE_SECURE</td>
-              <td className="py-2 pr-4"><span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px] font-medium">No</span></td>
-              <td className="py-2">Set to <code className="bg-gray-100 px-1 rounded">true</code> to enable secure cookies (default: <code className="bg-gray-100 px-1 rounded">false</code>)</td>
             </tr>
             <tr className="border-b border-gray-100">
               <td className="py-2 pr-4 font-mono text-indigo-600">INIT_ADMIN_EMAIL</td>
@@ -246,14 +257,4 @@ function CardHeader({ children }: { children: React.ReactNode }) {
 
 function CardContent({ children }: { children: React.ReactNode }) {
   return <div className="px-5 py-4">{children}</div>;
-}
-
-function CodeBlock({ lines }: { lines: string[] }) {
-  return (
-    <div className="rounded-md bg-gray-900 p-4 font-mono text-xs text-gray-100 overflow-x-auto">
-      {lines.map((line) => (
-        <p key={line} className={line.startsWith("#") ? "text-gray-500" : ""}>{line}</p>
-      ))}
-    </div>
-  );
 }
