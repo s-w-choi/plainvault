@@ -71,7 +71,7 @@ export function validateContentSize(content: string): ValidationResult {
 }
 
 export function validateContentType(contentType: string): ValidationResult {
-  const validTypes = ['env', 'markdown', 'text'];
+  const validTypes = ['env', 'markdown', 'text', 'json', 'yaml', 'xml', 'sql'];
   const errors: string[] = [];
 
   if (!contentType || !validTypes.some((t) => contentType.startsWith(t))) {

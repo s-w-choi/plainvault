@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { CopyableCodeBlock } from "@/components/copyable-code-block";
+import { DockerRunCommand } from "@/components/docker-run-command";
 
 export const metadata = {
   title: "PlainVault - Get Started",
@@ -143,16 +144,7 @@ docker compose up -d
           </div>
           <div>
             <p className="text-sm text-gray-600 mb-2">Option B: Docker run (app only)</p>
-            <CopyableCodeBlock
-              code={`docker run -d \\
-  --name plainvault \\
-  -p 13000:3000 \\
-  -e VAULT_ENCRYPTION_KEY="MjM5OHh5bjQ5YXMuZDIzcWRvaG93M3lybzh5b0dJSg==" \\
-  -e INIT_ADMIN_EMAIL="admin@plainvault.local" \\
-  -e INIT_ADMIN_PASSWORD="plainvault-admin" \\
-  -v plainvault-data:/app/prisma/data \\
-  boydchoi/plainvault:latest`}
-            />
+            <DockerRunCommand />
           </div>
           <div className="text-xs text-gray-500 space-y-1">
             <p>

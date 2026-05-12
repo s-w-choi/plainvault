@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     const result = await createApiKey({
       name,
       createdById: auth.ctx.userId,
-      expiresInDays: expiresInDays ? parseInt(expiresInDays, 10) : undefined,
+      expiresInDays: expiresInDays != null ? parseInt(expiresInDays, 10) : undefined,
     });
 
     return NextResponse.json({

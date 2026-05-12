@@ -59,12 +59,20 @@ export async function createApiKey(input: CreateApiKeyInput): Promise<ApiKeyOutp
   };
 }
 
-export async function verifyApiKey(key: string): Promise<{ valid: boolean; apiKeyId?: string; error?: string }> {
+export interface VerifiedApiKey {
+  apiKeyId: string;
+  scopes: string[];
+  ownerRole: string;
+}
+
+export async function verifyApiKey(key: string): Promise<
+  { valid: true; data: VerifiedApiKey } | { valid: false; error: string }
+> {
   const keyHash = crypto.createHash('sha256').update(key).digest('hex');
 
   const apiKey = await prisma.apiKey.findFirst({
     where: { keyHash },
-    include: { createdBy: { select: { status: true } } },
+    include: { createdBy: { select: { status: true, role: true } } },
   });
 
   if (!apiKey) {
@@ -83,7 +91,21 @@ export async function verifyApiKey(key: string): Promise<{ valid: boolean; apiKe
     return { valid: false, error: 'API_KEY_OWNER_INACTIVE' };
   }
 
-  return { valid: true, apiKeyId: apiKey.id };
+  let scopes: string[] = [];
+  try {
+    scopes = JSON.parse(apiKey.scopesJson);
+  } catch {
+    scopes = [];
+  }
+
+  return {
+    valid: true,
+    data: {
+      apiKeyId: apiKey.id,
+      scopes,
+      ownerRole: apiKey.createdBy.role,
+    },
+  };
 }
 
 export async function revokeApiKey(apiKeyId: string, revokedById: string): Promise<void> {
