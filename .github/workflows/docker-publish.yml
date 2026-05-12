@@ -1,0 +1,116 @@
+name: Docker Publish
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - package.json
+      - package-lock.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - docker/**
+      - apps/app/**
+  workflow_dispatch:
+
+jobs:
+  publish:
+    name: Build and publish Docker image
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests
+        run: pnpm test
+
+      - id: version
+        name: Read package.json version
+        run: |
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          echo "package_version=$PACKAGE_VERSION" >> "$GITHUB_OUTPUT"
+          echo "📦 package.json version: $PACKAGE_VERSION"
+
+      - id: check-version
+        name: Check latest Docker image tag
+        run: |
+          set -euo pipefail
+          IMAGE_REPO="boydchoi/plainvault"
+          VERSION="${{ steps.version.outputs.package_version }}"
+          TAG_LIST_FILE="$(mktemp)"
+          URL="https://registry.hub.docker.com/v2/repositories/${IMAGE_REPO}/tags?page_size=100"
+
+          while [ -n "$URL" ]; do
+            RESPONSE_FILE="$(mktemp)"
+            HTTP_STATUS=$(curl -sS -w "%{http_code}" -o "$RESPONSE_FILE" "$URL")
+            if [ "$HTTP_STATUS" = "404" ]; then
+              rm -f "$RESPONSE_FILE"
+              break
+            fi
+            if [ "$HTTP_STATUS" != "200" ]; then
+              cat "$RESPONSE_FILE"
+              rm -f "$RESPONSE_FILE"
+              echo "Failed to fetch Docker Hub tags for $IMAGE_REPO (status: $HTTP_STATUS)." >&2
+              exit 1
+            fi
+            jq -r '.results[].name' "$RESPONSE_FILE" >> "$TAG_LIST_FILE"
+            URL="$(jq -r '.next // empty' "$RESPONSE_FILE")"
+            rm -f "$RESPONSE_FILE"
+          done
+
+          LATEST_TAG=$(grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' "$TAG_LIST_FILE" | sort -V | tail -n 1 || true)
+          rm -f "$TAG_LIST_FILE"
+
+          echo "latest_existing_tag=$LATEST_TAG" >> "$GITHUB_OUTPUT"
+
+          if [ -n "$LATEST_TAG" ] && [ "$(printf '%s\n%s\n' "$LATEST_TAG" "$VERSION" | sort -V | head -n 1)" = "$VERSION" ]; then
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+            echo "⚠️ Package version $VERSION is not greater than latest image tag $LATEST_TAG. Publish skipped."
+          else
+            echo "should_publish=true" >> "$GITHUB_OUTPUT"
+            echo "🚀 Package version $VERSION is newer than latest image tag ${LATEST_TAG:-(none)}. Proceeding publish."
+          fi
+
+      - name: Setup Docker Buildx
+        if: steps.check-version.outputs.should_publish == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        if: steps.check-version.outputs.should_publish == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push image
+        if: steps.check-version.outputs.should_publish == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.app
+          push: true
+          tags: |
+            boydchoi/plainvault:${{ steps.version.outputs.package_version }}
+            boydchoi/plainvault:latest
+
+      - name: Skip publish
+        if: steps.check-version.outputs.should_publish == 'false'
+        run: |
+          echo "publish skipped. docker image tag already exists or is not newer."
