@@ -124,7 +124,7 @@ function QuickStartCard() {
           </div>
           <div>
             <p className="text-sm text-gray-600 mb-2">2. Run the container</p>
-            <CodeBlock lines={["docker run -d \\", "  --name plainvault \\", "  -p 13000:3000 \\", "  -e ENCRYPTION_KEY=\"your-encryption-key\" \\", "  -v plainvault-data:/app/data \\", "  ghcr.io/s-w-choi/plainvault:latest"]} />
+            <CodeBlock lines={["docker run -d \\", "  --name plainvault \\", "  -p 13000:3000 \\", "  -e ENCRYPTION_KEY=\"your-encryption-key\" \\", "  -v plainvault-data:/app/data \\", "  boydchoi/plainvault:latest"]} />
           </div>
         </div>
       </CardContent>
