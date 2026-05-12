@@ -3,6 +3,7 @@ import argon2 from 'argon2';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { getSettingBool } from '@/lib/settings/settings';
 
 const SESSION_COOKIE_NAME = 'session_token';
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -74,9 +75,10 @@ export async function getSession(): Promise<SessionData | null> {
 export async function setSessionCookie(userId: string): Promise<void> {
   const token = await createSession(userId);
   const cookieStore = await cookies();
+  const secure = await getSettingBool('cookie_secure');
   cookieStore.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure,
     sameSite: 'lax',
     maxAge: 60 * 60 * 24 * 7,
     path: '/',

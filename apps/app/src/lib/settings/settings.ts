@@ -51,6 +51,13 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
     type: 'boolean',
     defaultValue: 'true',
   },
+  {
+    key: 'cookie_secure',
+    label: 'Secure Cookies',
+    description: 'Set the Secure flag on session cookies. Enable only when serving over HTTPS.',
+    type: 'boolean',
+    defaultValue: 'false',
+  },
 ];
 
 const DEFAULTS = Object.fromEntries(

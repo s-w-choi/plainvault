@@ -14,7 +14,7 @@ export function middleware(request: NextRequest) {
     if (!request.cookies.get('csrf_token')) {
       response.cookies.set('csrf_token', generateCsrfToken(), {
         httpOnly: false,
-        secure: process.env.COOKIE_SECURE === 'true',
+        secure: false,
         sameSite: 'lax',
         maxAge: 60 * 60 * 24 * 7,
         path: '/',
