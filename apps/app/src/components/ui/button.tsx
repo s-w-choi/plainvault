@@ -1,4 +1,5 @@
 import React from "react";
+import { cn } from "./cn";
 
 const variants = {
   default: "bg-indigo-600 text-white hover:bg-indigo-700",
@@ -15,10 +16,6 @@ const sizes = {
   lg: "h-11 rounded-md px-8",
   icon: "h-10 w-10",
 } as const;
-
-function cn(...classes: (string | undefined | null | false)[]): string {
-  return classes.filter(Boolean).join(" ");
-}
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: keyof typeof variants;

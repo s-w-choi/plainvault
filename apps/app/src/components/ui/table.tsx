@@ -1,8 +1,5 @@
 import * as React from "react";
-
-function cn(...classes: (string | undefined | null | false)[]): string {
-  return classes.filter(Boolean).join(" ");
-}
+import { cn } from "./cn";
 
 export type TableProps = React.HTMLAttributes<HTMLTableElement>;
 
