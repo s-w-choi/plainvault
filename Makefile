@@ -25,7 +25,7 @@ PRISMA_SCHEMA := prisma/schema.prisma
 
 # --- Phony Targets -------------------------------------------------------------
 
-.PHONY: help install run stop migrate reset db-studio test check docker-landing docker-service deploy-web deploy-web-preview
+.PHONY: help install run stop migrate reset db-studio test check docker docker-landing docker-service deploy-web deploy-web-preview
 
 # --- Targets -------------------------------------------------------------------
 
@@ -84,6 +84,14 @@ db-studio:
 ## Seed: Seed the database with initial data
 seed:
 	$(PKG_MANAGER) db:seed
+
+## docker: Start all services via Docker Compose (app@13000, web@13001)
+docker:
+	docker compose up -d
+
+## docker-stop: Stop all Docker services
+docker-stop:
+	docker compose down
 
 ## docker-landing: Build and run landing page (web) Docker container
 docker-landing:
