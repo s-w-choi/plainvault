@@ -1,4 +1,4 @@
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { getRequestConfig } from "next-intl/server";
 import { routing } from "./routing";
 
@@ -23,8 +23,19 @@ function detectLocale(acceptLanguage: string | null): Locale {
 }
 
 export default getRequestConfig(async () => {
-  const requestHeaders = await headers();
-  const locale = detectLocale(requestHeaders.get("accept-language"));
+  const cookieStore = await cookies();
+  const localeCookie = cookieStore.get("NEXT_LOCALE")?.value;
+  const locale =
+    (routing.locales.includes(localeCookie as Locale) ? localeCookie : null) as Locale | null;
+
+  if (!locale) {
+    const requestHeaders = await headers();
+    const detected = detectLocale(requestHeaders.get("accept-language"));
+    return {
+      locale: detected,
+      messages: (await import(`../../messages/${detected}.json`)).default,
+    };
+  }
 
   return {
     locale,

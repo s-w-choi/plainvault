@@ -15,7 +15,8 @@
     "all": "All",
     "active": "Active",
     "type": "Type",
-    "unknown": "Unknown"
+    "unknown": "Unknown",
+    "and": "and"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -29,9 +30,18 @@
     "apiKeys": "API Keys",
     "auditLogs": "Audit Logs",
     "categories": "Categories",
+    "docsGettingStarted": "Getting Started",
+    "docsAccountAndRegistration": "Account & Registration",
+    "docsRolesAndPermissions": "Roles & Permissions",
+    "docsFileManagement": "File Management",
+    "docsCategories": "Categories",
+    "docsHistoryAndRevisions": "History & Revisions",
+    "docsSearchAndFilter": "Search & Filter",
+    "docsApiKeys": "API Keys",
     "logout": "Sign out",
     "myProfile": "My Profile",
-    "changePassword": "Change Password"
+    "changePassword": "Change Password",
+    "settings": "Settings"
   },
   "roles": {
     "admin": "Admin",
@@ -197,10 +207,69 @@
     "hideDiff": "Hide Diff",
     "viewDiff": "View Diff",
     "diff": "Diff {range}",
-    "initial": "initial"
+    "initial": "initial",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleting": "Deleting...",
+    "deleteConfirm": "Delete \"{title}\"?",
+    "content": "Content",
+    "titleField": "Title",
+    "fileName": "File Name",
+    "contentType": "Content Type",
+    "category": "Category",
+    "noCategory": "No category",
+    "restore": "Restore",
+    "restoreConfirm": "Restore file to revision #{number}? This will create a new revision.",
+    "failedRestore": "Failed to restore revision",
+    "failedLoadDiff": "Failed to load diff",
+    "apiCall": "API Call",
+    "apiCallTitle": "API Call Command",
+    "apiCallDescription": "Use the following curl command to retrieve this file via the API.",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "close": "Close",
+    "getFile": "Get File",
+    "getRawFile": "Get Raw File"
   },
   "docs": {
-    "gettingStarted": "Getting Started",
+    "gettingStarted": {
+      "title": "Getting Started",
+      "whatIs": {
+        "description": "PlainVault is a clean internal vault for storing secrets, configs, and secure team notes — without the complexity.",
+        "commonUseCases": "Common use cases include:",
+        "useCases": {
+          "databaseCredentials": "Database connection strings and credentials",
+          "thirdPartyApiKeys": "Third-party API keys",
+          "envConfigs": "Environment configs (e.g., .env, config.yaml)",
+          "sslCerts": "SSL certificates and private keys",
+          "sensitiveTeamNotes": "Team notes with sensitive information",
+          "infrastructureConfig": "Infrastructure configuration"
+        }
+      },
+      "access": {
+        "title": "Getting access",
+        "step1": {
+          "beforeLink": "Start by requesting access — go to",
+          "linkText": "Register",
+          "afterLink": "and submit your details."
+        },
+        "step2": "An admin will review your request and assign you a role.",
+        "step3": "Once approved, sign in and head to your dashboard."
+      },
+      "security": {
+        "title": "Security model",
+        "encryptionAtRest": "All file content is encrypted at rest with AES-256-GCM before it is stored.",
+        "viewerMasking": {
+          "beforeRole": "When you're a",
+          "afterRole": "your view is masked to reduce accidental leaks."
+        },
+        "viewerShownAs": {
+          "beforeRole": "For example, a",
+          "afterRole": "will see sensitive values hidden like this:"
+        },
+        "devAdminSeeRaw": "can view raw values when needed."
+      }
+    },
     "account": "Account & Registration",
     "roles": "Roles & Permissions",
     "files": "File Management",
@@ -211,6 +280,206 @@
     "userGuide": "PlainVault User Guide",
     "guideIntro": "A clean internal vault for storing secrets, configs, and secure team notes. All content is encrypted with AES-256-GCM and access is controlled by role-based permissions.",
     "whatIsPlainVault": "What is PlainVault?",
+    "accountSection": {
+      "requesting": {
+        "title": "Requesting an account",
+        "step1": {
+          "beforeLink": "Open",
+          "linkText": "Register",
+          "afterLink": "and fill in your details."
+        },
+        "step2": "Submit your registration request.",
+        "step3": {
+          "beforeButton": "Click",
+          "afterButton": "— your account will be marked as",
+          "pending": "Pending"
+        },
+        "step4": "Wait for an admin to approve your registration."
+      },
+      "pendingStatus": {
+        "title": "Pending approval",
+        "description": "While your account is pending, you can't sign in yet. Once approved, you'll be able to log in normally."
+      }
+    },
+    "rolesSection": {
+      "table": {
+        "feature": "Feature"
+      },
+      "features": {
+        "viewFileRaw": "View raw content",
+        "viewFileMasked": "View masked content",
+        "createFile": "Create files",
+        "editFile": "Edit files",
+        "deleteFile": "Delete files",
+        "manageCategories": "Manage categories",
+        "approveRejectUsers": "Approve / reject users",
+        "createRevokeApiKeys": "Create / revoke API keys",
+        "viewAuditLogs": "View audit logs",
+        "viewRevisionHistory": "View revision history"
+      },
+      "cards": {
+        "admin": "Admins manage access and policies. They can approve users, manage categories and API keys, and view audit logs.",
+        "developer": "Developers can create and edit files, and view raw values. They can also browse revision history.",
+        "viewer": "Viewers can browse files safely with masking. They can see masked values but can't create or edit files."
+      }
+    },
+    "filesSection": {
+      "create": {
+        "title": "Create a file",
+        "step1": {
+          "beforeLink": "Go to",
+          "afterLink": "to see your vault."
+        },
+        "step2": {
+          "beforeButton": "Click"
+        },
+        "step3": "Enter a title and file name.",
+        "step4": "Choose a content type and category.",
+        "step5": {
+          "beforeButton": "Finish by clicking"
+        }
+      },
+      "view": {
+        "title": "View content (masked vs raw)",
+        "item1": "Files are listed on the dashboard and grouped by category.",
+        "item2AfterDash": "can view raw values.",
+        "item3AfterDash": "sees masked values.",
+        "item4": {
+          "beforeButton": "Use",
+          "raw": "Raw",
+          "afterButton": "to toggle between masked and raw views (if permitted)."
+        }
+      },
+      "edit": {
+        "title": "Edit a file (with version history)",
+        "step1": {
+          "beforeButton": "Click"
+        },
+        "step2": "Update the content as needed.",
+        "step3": "Add a short change summary.",
+        "step4": {
+          "beforeButton": "Click",
+          "afterButton": "to save a new revision."
+        }
+      },
+      "contentTypes": {
+        "title": "Supported content types",
+        "types": {
+          "text": "Text",
+          "markdown": "Markdown",
+          "env": "ENV",
+          "json": "JSON",
+          "yaml": "YAML",
+          "xml": "XML",
+          "sql": "SQL"
+        },
+        "description": {
+          "beforeRole": "Even when you're a",
+          "afterRole": "you can still read files safely — sensitive values in",
+          "afterCode": "style formats are masked in the UI."
+        }
+      }
+    },
+    "categoriesSection": {
+      "title": "Organize with categories",
+      "description": {
+        "beforeRole": "Categories are managed by",
+        "afterRole": "and help your team group files by environment, service, or purpose."
+      },
+      "steps": {
+        "step1": {
+          "beforeLink": "Go to"
+        },
+        "step2": {
+          "beforeButton": "Click"
+        },
+        "step3": "Choose a name and color.",
+        "step4": {
+          "beforeButton": "Click"
+        }
+      },
+      "samples": {
+        "production": "Production",
+        "development": "Development",
+        "secrets": "Secrets",
+        "config": "Config",
+        "notes": "Notes"
+      },
+      "note": "Tip: Use colors to distinguish environments at a glance."
+    },
+    "historySection": {
+      "title": "History & revisions",
+      "description": "Every edit creates a new revision. You can compare changes and restore older content at any time.",
+      "steps": {
+        "step1": "Open a file you want to review.",
+        "step2": {
+          "beforeButton": "Click"
+        },
+        "step3": "Select a revision to view its diff.",
+        "step4": {
+          "beforeButton": "Click",
+          "afterButton": {
+            "beforeRoles": "Only",
+            "afterRoles": "can restore revisions."
+          }
+        }
+      },
+      "diffExample": {
+        "added": "added",
+        "removed": "removed",
+        "unchanged": "unchanged"
+      },
+      "footer": {
+        "beforeRoles": "Restores are limited to",
+        "and": "and",
+        "afterRoles": "to prevent accidental rollbacks."
+      }
+    },
+    "searchSection": {
+      "title": "Search & filter",
+      "items": {
+        "textSearch": {
+          "title": "Text search",
+          "description": "Find files by title, file name, or content."
+        },
+        "categoryFilter": {
+          "title": "Category filter",
+          "description": "Narrow results to a specific category."
+        },
+        "combined": {
+          "title": "Combine filters",
+          "description": "Use text search and category filtering together for faster navigation."
+        },
+        "clearFilter": {
+          "title": "Clear filters",
+          "description": {
+            "beforeButton": "Use",
+            "afterButton": "to reset the category filter."
+          }
+        }
+      }
+    },
+    "apiKeysSection": {
+      "title": "API Keys",
+      "description": {
+        "beforeRole": "API keys are created and managed by",
+        "afterRole": "for CI/CD and other programmatic access."
+      },
+      "steps": {
+        "step1": {
+          "beforeLink": "Go to"
+        },
+        "step2": {
+          "beforeButton": "Click",
+          "createKey": "Create Key"
+        },
+        "step3": "Name the key and set an optional expiration.",
+        "step4": "Copy the key now — you won't be able to see it again."
+      },
+      "footer": {
+        "beforeCode": "Send your API key as a bearer token in the Authorization header, for example:"
+      }
+    },
     "apiReference": "API Reference",
     "apiSubtitle": "PlainVault REST API — session-based authentication via cookies",
     "overview": "Overview",
@@ -219,12 +488,124 @@
     "auditLogs": "Audit Logs",
     "baseUrl": "Base URL",
     "allEndpoints": "All Endpoints",
-    "noCodeExample": "No code example available"
+    "noCodeExample": "No code example available",
+    "api": {
+      "fileRetrieval": "File Retrieval",
+      "sessionAuth": "Session-Based Authentication",
+      "sessionAuthDescription": "Most API endpoints use session-based authentication via cookies. After logging in via <loginEndpoint>POST /api/auth/login</loginEndpoint>, include the session cookie in subsequent requests using <curlFlag>-b cookies.txt</curlFlag> (curl), <fetchCredentials>credentials: 'include'</fetchCredentials> (fetch), or <pythonSession>requests.Session()</pythonSession> (Python).",
+      "apiKeyAuth": "API Key Authentication",
+      "apiKeyAuthDescription": "For programmatic access (CI/CD pipelines, scripts), use API keys with Bearer token authentication. API keys are created by admins via the UI or the <createKeyEndpoint>POST /api/admin/api-keys</createKeyEndpoint> endpoint.",
+      "apiKeyPrefix": "API keys have the prefix <prefix>secvault_</prefix>",
+      "apiKeyScopes": "Keys can be scoped to specific operations (currently: <scope>files:read_raw</scope>)",
+      "apiKeyExpiry": "Keys can be set to expire after a configurable number of days",
+      "apiKeyRevoked": "Revoked or expired keys return <status>401 Unauthorized</status>",
+      "fileRetrievalComparison": "File Retrieval Comparison",
+      "method": "Method",
+      "endpoint": "Endpoint",
+      "auth": "Auth",
+      "useCase": "Use Case",
+      "sessionCookie": "Session cookie",
+      "bearerToken": "Bearer token",
+      "getMetadataUseCase": "Get metadata + masked/full content in dashboard",
+      "getRawContentUseCase": "Get raw unmasked content (DEVELOPER+ only)",
+      "getProgrammaticUseCase": "Get raw content programmatically (CI/CD, scripts)",
+      "includeApiKeyHeader": "# Include the API key in the Authorization header"
+    }
   },
   "admin": {
-    "users": "Users",
-    "categories": "Categories",
-    "apiKeys": "API Keys",
-    "auditLogs": "Audit Logs"
+    "users": {
+      "title": "User Management",
+      "totalUsers": "{count} user{count, plural, one {} other {s}} total — {pending} pending",
+      "pendingApproval": "Pending Approval",
+      "approvedUsers": "Approved Users",
+      "rejected": "Rejected",
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "status": "Status",
+      "requested": "Requested",
+      "lastLogin": "Last Login",
+      "approve": "Approve",
+      "reject": "Reject",
+      "rejectConfirm": "Reject this user? This cannot be undone.",
+      "loading": "Loading...",
+      "noCategories": "No categories yet."
+    },
+    "categories": {
+      "title": "Categories",
+      "newCategory": "New Category",
+      "createCategory": "Create Category",
+      "name": "Name",
+      "namePlaceholder": "e.g. Production, Development",
+      "color": "Color",
+      "preview": "Preview",
+      "files": "Files",
+      "delete": "Delete",
+      "deleteConfirm": "Delete category \"{name}\"?",
+      "failedCreate": "Failed to create",
+      "failedDelete": "Failed to delete",
+      "creating": "Creating..."
+    },
+    "apiKeys": {
+      "title": "API Keys",
+      "description": "Manage API keys for programmatic access",
+      "createApiKey": "Create API Key",
+      "newApiKey": "New API Key",
+      "name": "Name",
+      "namePlaceholder": "Production API Key",
+      "expiresDays": "Expires (days, optional)",
+      "creating": "Creating...",
+      "create": "Create",
+      "copy": "Copy",
+      "copied": "Copied to clipboard",
+      "done": "Done",
+      "keyCreated": "API Key created. Copy it now — you cannot see it again.",
+      "revoke": "Revoke",
+      "revokeConfirm": "Revoke this API key? Applications using it will stop working.",
+      "activeKeys": "Active Keys",
+      "revokedKeys": "Revoked Keys",
+      "prefix": "Prefix",
+      "scopes": "Scopes",
+      "expires": "Expires",
+      "lastUsed": "Last Used",
+      "revokedAt": "Revoked At",
+      "never": "Never",
+      "expired": "Expired",
+      "noKeys": "No API keys created yet. Create one to get started."
+    },
+    "auditLogs": {
+      "title": "Audit Logs",
+      "totalEvents": "{count} event{count, plural, one {} other {s}} total",
+      "timeKst": "Time (KST)",
+      "event": "Event",
+      "actor": "Actor",
+      "target": "Target",
+      "result": "Result",
+      "ok": "OK",
+      "fail": "FAIL",
+      "previous": "Previous",
+      "next": "Next",
+      "pageInfo": "Page {current} of {total} — {totalItems} total",
+      "serverLogs": "Server Logs",
+      "serverLogsTitle": "Server Console",
+      "serverLogsDescription": "Real-time server console output",
+      "connect": "Connect",
+      "disconnect": "Disconnect",
+      "clear": "Clear",
+      "connected": "Connected",
+      "disconnected": "Disconnected",
+      "noLogs": "No log entries yet. Click Connect to start streaming.",
+      "close": "Close",
+      "logCount": "{count} entries"
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Configure application behavior and security policies.",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "saveSettings": "Save Settings",
+      "saving": "Saving...",
+      "saved": "Settings saved successfully."
+    }
   }
 }
