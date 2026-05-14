@@ -45,7 +45,7 @@ async function run() {
   // ── 2. Admin approve ────────────────────────────────────────
 
   console.log("\n[2/8] Auth - Admin approve pending user");
-  const adminLogin = await apiReq("POST", "/api/auth/login", { email: "admin@internal.local", password: "admin123" });
+  const adminLogin = await apiReq("POST", "/api/auth/login", { email: "admin@plainvault.local", password: "plainvault-admin" });
   assert(adminLogin.status === 200, "Admin login failed");
   const adminCookie = adminLogin.sessionCookie!;
   console.log("  ✓ Admin logged in");

@@ -110,8 +110,8 @@
 
     // 5. Admin login
     console.log('[5] Admin login');
-    const adminEmail = 'admin@internal.local';
-    const adminPass = 'admin123';
+    const adminEmail = 'admin@plainvault.local';
+    const adminPass = 'plainvault-admin';
     const adminLogin = await request('POST', '/api/auth/login', {
       email: adminEmail,
       password: adminPass,
