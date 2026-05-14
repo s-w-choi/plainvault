@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { withAuth } from '@/lib/auth/auth-handler';
 import { createAuditLog } from '@/lib/audit/audit-log';
@@ -13,6 +13,21 @@ export async function POST(
 
   try {
     const { id } = await params;
+
+    const body = (await request.json().catch(() => ({}))) as unknown;
+    const reason = (body as { reason?: unknown })?.reason;
+
+    if (reason !== undefined && typeof reason !== 'string') {
+      return NextResponse.json(
+        {
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid reason. Must be a string',
+          },
+        },
+        { status: 400 }
+      );
+    }
 
     const user = await prisma.user.findUnique({ where: { id } });
     if (!user) {
@@ -34,7 +49,10 @@ export async function POST(
       actorId: auth.ctx.userId,
       targetType: 'user',
       targetId: id,
-      metadata: { email: user.email },
+      metadata: {
+        email: user.email,
+        ...(reason ? { reason } : {}),
+      },
     });
 
     return NextResponse.json({ user: updated });
