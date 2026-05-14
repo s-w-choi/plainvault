@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { RoleBadge } from "@/components/ui/badge";
 
 interface AppHeaderProps {
   user: { name: string; email: string; role: string };
@@ -40,7 +40,7 @@ export function AppHeader({ user, activeTab = "dashboard" }: AppHeaderProps) {
         {/* Left: Logo + Nav */}
         <div className="flex items-center gap-6">
           <Link href="/dashboard" className="flex items-center gap-2 font-semibold text-gray-900 hover:text-indigo-600 transition-colors">
-            <img src="/logo.png" alt="PlainVault" className="h-7" />
+            <Image src="/logo.png" alt="PlainVault" width={28} height={28} className="h-7 w-auto" />
           </Link>
           <nav className="flex items-center gap-1 text-sm">
             <Link
@@ -81,11 +81,13 @@ export function AppHeader({ user, activeTab = "dashboard" }: AppHeaderProps) {
           {user.role === "ADMIN" && (
             <div className="relative" ref={adminDropdownRef}>
               <button
+                type="button"
                 onClick={() => setAdminOpen(!adminOpen)}
                 className="flex items-center gap-1 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
               >
                 Admin
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <title>Toggle admin menu</title>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
@@ -110,6 +112,7 @@ export function AppHeader({ user, activeTab = "dashboard" }: AppHeaderProps) {
 
           <div className="relative" ref={dropdownRef}>
             <button
+              type="button"
               onClick={() => setOpen(!open)}
               className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${
                 activeTab === "personal"
@@ -122,6 +125,7 @@ export function AppHeader({ user, activeTab = "dashboard" }: AppHeaderProps) {
               {user.role === "DEVELOPER" && <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-700 shrink-0 whitespace-nowrap">Developer</span>}
               {user.role === "VIEWER" && <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium border border-gray-300 text-gray-600 bg-white shrink-0 whitespace-nowrap">Viewer</span>}
               <svg className="w-3 h-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <title>Toggle user menu</title>
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
