@@ -19,5 +19,9 @@ export async function createCategory(name: string, color: string) {
 }
 
 export async function deleteCategory(id: string) {
+  const fileCount = await prisma.vaultFile.count({ where: { categoryId: id } });
+  if (fileCount > 0) {
+    throw new Error(`Cannot delete: ${fileCount} file(s) are using this category`);
+  }
   return prisma.category.delete({ where: { id } });
 }
