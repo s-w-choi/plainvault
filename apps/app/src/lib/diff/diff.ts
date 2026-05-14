@@ -1,4 +1,4 @@
-interface DiffLine {
+export interface DiffLine {
   type: 'added' | 'removed' | 'unchanged';
   content: string;
   lineNumber?: number;
@@ -6,7 +6,7 @@ interface DiffLine {
   newLineNumber?: number;
 }
 
-interface DiffResult {
+export interface DiffResult {
   lines: DiffLine[];
   hasChanges: boolean;
 }
