@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 function generateKey(): string {
   const bytes = new Uint8Array(32);
@@ -20,19 +20,14 @@ function buildCommand(key: string): string {
 }
 
 export function DockerRunCommand() {
-  const [key, setKey] = useState<string | null>(null);
+  const [key, setKey] = useState<string>(() => generateKey());
   const [copied, setCopied] = useState(false);
 
   const regenerate = useCallback(() => {
     setKey(generateKey());
   }, []);
 
-  useEffect(() => {
-    regenerate();
-  }, [regenerate]);
-
   const handleCopy = useCallback(async () => {
-    if (!key) return;
     try {
       await navigator.clipboard.writeText(buildCommand(key));
       setCopied(true);

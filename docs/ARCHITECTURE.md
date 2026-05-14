@@ -222,6 +222,10 @@ Script → GET /api/v1/files/:id/raw
 - Structured logging with configurable log levels
 - Log level from `LOG_LEVEL` env var (default: info)
 
+### `/src/lib/db.ts`
+- Prisma client singleton instance
+- Connection management and graceful shutdown
+
 ### `/src/lib/time/kst.ts`
 - KST (Korea Standard Time) timezone formatting
 - Consistent date/time display across the app
@@ -232,7 +236,7 @@ Script → GET /api/v1/files/:id/raw
 
 ### `/src/lib/security/rate-limit.ts`
 - Login rate limiting (configurable attempts/window)
-- In-memory sliding window implementation
+- In-memory fixed window rate limiting
 
 ### `/src/lib/markdown/markdown.ts`
 - Markdown rendering with sanitize-html
@@ -246,20 +250,35 @@ Script → GET /api/v1/files/:id/raw
 ### User
 - id, name, email, passwordHash, role, status
 - createdAt, updatedAt, lastLoginAt
-- Relations: vaultFiles, apiKeys, auditLogs
+- Relations: vaultFiles, apiKeys
 
 ### VaultFile
 - id, title, actualFileName, encryptedContent, contentSha256
-- contentType, createdById, updatedById
+- contentType, categoryId, keyVersion
+- createdById, updatedById
 - createdAt, updatedAt, deletedAt
-- Relations: revisions, createdBy, updatedBy
+- Relations: revisions, createdBy, updatedBy, category
 
 ### FileRevision
-- id, fileId, revisionNumber
+- id, fileId, revisionNumber, keyVersion
 - encryptedContentBefore, encryptedContentAfter
 - contentSha256Before, contentSha256After
 - changeSummary, changedById, changedAt
 - Relations: file, changedBy
+
+### Category
+- id, name, color
+- createdAt, updatedAt
+- Relations: vaultFiles
+
+### Setting
+- id, key, value
+- createdAt, updatedAt
+
+### Session
+- id, userId, expiresAt
+- createdAt
+- Relations: user
 
 ### AuditLog
 - id, eventType, actorType, actorId
@@ -276,7 +295,7 @@ Script → GET /api/v1/files/:id/raw
 ## Security Measures
 
 1. **Content Encryption**: AES-256-GCM with PBKDF2-derived keys
-2. **Password Hashing**: bcrypt with high iteration count
+2. **Password Hashing**: Argon2id with secure parameters
 3. **API Key Hashing**: SHA-256 one-way hash
 4. **Session Security**: httpOnly, sameSite, secure cookies
 5. **Secret Masking**: Server-side masking for viewer role

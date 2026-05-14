@@ -250,7 +250,7 @@ function FilesSection() {
                 <li>Confirm the deletion in the dialog</li>
               </ul>
               <div className="mt-3 rounded-md bg-red-50 px-3 py-2 text-xs text-red-600">
-                Deletion is permanent. All revisions and history for the file are removed. This action cannot be undone.
+                Deletion hides the file from the interface (soft delete). File data and revision history remain in the database.
               </div>
             </CardContent>
           </Card>
@@ -277,19 +277,23 @@ function FilesSection() {
               <tbody className="text-gray-600">
                 <tr className="border-b border-gray-100">
                   <td className="py-2 pr-4 font-mono">env</td>
-                  <td className="py-2">Masks all <code className="bg-gray-100 px-1 rounded">KEY=value</code> pairs</td>
+                  <td className="py-2">Masks <code className="bg-gray-100 px-1 rounded">KEY=value</code> pairs line by line</td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-2 pr-4 font-mono">text</td>
+                  <td className="py-2">Masks <code className="bg-gray-100 px-1 rounded">KEY=value</code> pairs line by line (same as env)</td>
                 </tr>
                 <tr className="border-b border-gray-100">
                   <td className="py-2 pr-4 font-mono">json</td>
-                  <td className="py-2">Masks string values in key-value pairs</td>
+                  <td className="py-2">General pattern detection for sensitive values (keys, tokens, URLs)</td>
                 </tr>
                 <tr className="border-b border-gray-100">
                   <td className="py-2 pr-4 font-mono">yaml</td>
-                  <td className="py-2">Masks values in <code className="bg-gray-100 px-1 rounded">key: value</code> pairs</td>
+                  <td className="py-2">General pattern detection for sensitive values (keys, tokens, URLs)</td>
                 </tr>
                 <tr>
-                  <td className="py-2 pr-4 font-mono">text / others</td>
-                  <td className="py-2">Full masking — entire content hidden from VIEWER</td>
+                  <td className="py-2 pr-4 font-mono">xml, sql, markdown</td>
+                  <td className="py-2">General pattern detection for sensitive values (keys, tokens, URLs)</td>
                 </tr>
               </tbody>
             </table>
@@ -481,10 +485,16 @@ function ApiKeysSection() {
           <CardContent>
             <p className="text-sm text-gray-600 mb-3">Include the key in the Authorization header of your HTTP requests:</p>
             <div className="rounded-md bg-gray-900 p-4 font-mono text-xs text-gray-100">
-              <p>Authorization: Bearer sk_test_xxxx</p>
+              <p>Authorization: Bearer secvault_abc123</p>
             </div>
+            <p className="mt-4 text-sm text-gray-600">Scopes:</p>
+            <ul className="mt-2 list-disc list-inside space-y-1 text-sm text-gray-600">
+              <li><code className="bg-gray-100 px-1 rounded text-xs">files:read</code> — list files and read metadata/content</li>
+              <li><code className="bg-gray-100 px-1 rounded text-xs">files:write</code> — create and update files</li>
+              <li><code className="bg-gray-100 px-1 rounded text-xs">files:read_raw</code> — download raw decrypted content</li>
+            </ul>
             <p className="mt-3 text-sm text-gray-600">Example with curl:</p>
-            <CodeBlock lines={["curl -H \"Authorization: Bearer your_key_here\" \\", "  http://localhost:13000/api/files"]} />
+            <CodeBlock lines={["curl -H \"Authorization: Bearer your_key_here\" \\", "  http://localhost:13000/api/v1/files/{id}/raw"]} />
           </CardContent>
         </Card>
 

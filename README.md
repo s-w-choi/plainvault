@@ -62,9 +62,23 @@ Every action — file access, creation, modification, login — is logged for co
 
 Programmatic access to files via bearer token authentication for CI/CD pipelines and integrations.
 
+The public API is versioned under `/api/v1/`.
+
 ```bash
-Authorization: Bearer sk_test_xxxx
+# List files
+curl -H "Authorization: Bearer secvault_xxxxxxxxxxxxxxxxxx" \
+  http://localhost:13000/api/v1/files
+
+# Get file content
+curl -H "Authorization: Bearer secvault_xxxxxxxxxxxxxxxxxx" \
+  http://localhost:13000/api/v1/files/{id}
+
+# Get raw file content (requires files:read_raw scope)
+curl -H "Authorization: Bearer secvault_xxxxxxxxxxxxxxxxxx" \
+  http://localhost:13000/api/v1/files/{id}/raw
 ```
+
+Available API key scopes: `files:read`, `files:write`, `files:read_raw`.
 
 ---
 
@@ -95,23 +109,43 @@ plainvault/
 
 ## Getting Started
 
-### Prerequisites
-
-- Node.js 18+
-- pnpm 9+
+### Docker (recommended)
 
 ```bash
-# Clone and install
-make install
-
-# Start dev servers (app@13000, web@13001)
-make run
+docker compose up -d
 ```
 
-Visit [http://localhost:13000](http://localhost:13000) and log in with:
+This starts both services:
+
+| Service | Port | Description |
+|---------|------|-------------|
+| **App** | [localhost:13000](http://localhost:13000) | Main vault service |
+| **Web** | [localhost:13001](http://localhost:13001) | Landing page |
+
+On first run, Docker automatically:
+- Generates an encryption key and persists it in a Docker volume
+- Runs database migrations
+- Creates the default admin account
+
+Log in with:
 
 - **Email:** `admin@plainvault.local`
 - **Password:** `plainvault-admin`
+
+> **Important:** Change the admin password after first login via Account settings.
+
+#### Custom configuration
+
+Override environment variables in `docker-compose.yml`:
+
+```yaml
+environment:
+  - INIT_ADMIN_EMAIL=you@example.com
+  - INIT_ADMIN_PASSWORD=your-secure-password
+  - VAULT_ENCRYPTION_KEY=your-base64-encoded-32-byte-key  # Optional — auto-generated if omitted
+```
+
+Data persists in the `vault-data` Docker volume across container restarts.
 
 ---
 
@@ -122,7 +156,7 @@ Visit [http://localhost:13000](http://localhost:13000) and log in with:
 ```
 # Raw (DEVELOPER / ADMIN)
 DATABASE_URL=postgres://user:secret123@db.example.com:5432
-API_KEY=sk_live_abcdef123456
+API_KEY=secvault_abcdef123456
 
 # Masked (VIEWER)
 DATABASE_URL=********
