@@ -37,7 +37,7 @@ export async function createApiKey(input: CreateApiKeyInput): Promise<ApiKeyOutp
       status: 'ACTIVE',
       createdById: input.createdById,
       expiresAt,
-      scopesJson: JSON.stringify(input.scopes ?? ['files:read_raw']),
+      scopesJson: JSON.stringify(input.scopes ?? ['files:read', 'files:read_raw']),
     },
   });
 
@@ -56,7 +56,7 @@ export async function createApiKey(input: CreateApiKeyInput): Promise<ApiKeyOutp
     keyPrefix: apiKey.keyPrefix,
     key,
     expiresAt: apiKey.expiresAt,
-    scopes: input.scopes ?? ['files:read_raw'],
+    scopes: input.scopes ?? ['files:read', 'files:read_raw'],
   };
 }
 
@@ -125,6 +125,13 @@ export async function revokeApiKey(apiKeyId: string, revokedById: string): Promi
     actorId: revokedById,
     targetType: 'api_key',
     targetId: apiKeyId,
+  });
+}
+
+export async function updateApiKeyScopes(apiKeyId: string, scopes: string[]): Promise<void> {
+  await prisma.apiKey.update({
+    where: { id: apiKeyId },
+    data: { scopesJson: JSON.stringify(scopes) },
   });
 }
 

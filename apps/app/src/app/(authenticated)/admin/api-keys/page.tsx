@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { createApiKeyAction, listApiKeysAction, revokeApiKeyAction } from "@/actions/admin-actions";
+import { createApiKeyAction, listApiKeysAction, revokeApiKeyAction, updateApiKeyScopesAction } from "@/actions/admin-actions";
 
 interface ApiKey {
   id: string;
@@ -40,6 +40,9 @@ export default function AdminApiKeysPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
   const [newKeyExpiry, setNewKeyExpiry] = useState("");
+  const [newKeyScopes, setNewKeyScopes] = useState<string[]>(["files:read", "files:read_raw"]);
+  const [editingKeyId, setEditingKeyId] = useState<string | null>(null);
+  const [editScopes, setEditScopes] = useState<string[]>([]);
   const [error, setError] = useState("");
 
   const loadKeys = useCallback(async () => {
@@ -75,7 +78,8 @@ export default function AdminApiKeysPage() {
     try {
       const result = await createApiKeyAction(
         newKeyName,
-        newKeyExpiry ? parseInt(newKeyExpiry, 10) : undefined
+        newKeyExpiry ? parseInt(newKeyExpiry, 10) : undefined,
+        newKeyScopes
       );
 
       if (result && "error" in result) {
@@ -86,6 +90,7 @@ export default function AdminApiKeysPage() {
       setNewKey({ name: result.apiKey.name, key: result.apiKey.key });
       setNewKeyName("");
       setNewKeyExpiry("");
+      setNewKeyScopes(["files:read", "files:read_raw"]);
       setShowCreateForm(false);
       await loadKeys();
     } catch {
@@ -100,6 +105,14 @@ export default function AdminApiKeysPage() {
 
     const result = await revokeApiKeyAction(keyId);
     if (result && !("error" in result)) {
+      await loadKeys();
+    }
+  }
+
+  async function handleSaveScopes(keyId: string) {
+    const result = await updateApiKeyScopesAction(keyId, editScopes);
+    if (result && !("error" in result)) {
+      setEditingKeyId(null);
       await loadKeys();
     }
   }
@@ -168,12 +181,35 @@ export default function AdminApiKeysPage() {
                     />
                   </div>
                   <div className="flex gap-2">
-                    <Button type="submit" disabled={creating}>
+                    <Button type="submit" disabled={creating || newKeyScopes.length === 0}>
                       {creating ? t("creating") : t("create")}
                     </Button>
                     <Button type="button" variant="outline" onClick={() => setShowCreateForm(false)} disabled={creating}>
                       {tCommon("cancel")}
                     </Button>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-gray-700">{t("scopes")}</label>
+                  <div className="flex flex-wrap gap-3">
+                    {(["files:read", "files:read_raw", "files:write"] as const).map((scope) => (
+                      <label key={scope} className="flex items-center gap-1.5 text-sm text-gray-600 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={newKeyScopes.includes(scope)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setNewKeyScopes([...newKeyScopes, scope]);
+                            } else {
+                              setNewKeyScopes(newKeyScopes.filter((s) => s !== scope));
+                            }
+                          }}
+                          disabled={creating}
+                          className="rounded border-gray-300"
+                        />
+                        <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">{scope}</code>
+                      </label>
+                    ))}
                   </div>
                 </div>
               </form>
@@ -244,11 +280,54 @@ export default function AdminApiKeysPage() {
                           <code className="text-xs bg-gray-100 px-2 py-0.5 rounded font-mono">{key.keyPrefix}...</code>
                         </TableCell>
                         <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {key.scopes.map((scope) => (
-                              <Badge key={scope} variant="secondary" className="text-xs">{scope}</Badge>
-                            ))}
-                          </div>
+                          {editingKeyId === key.id ? (
+                            <div className="flex items-center gap-2">
+                              {(["files:read", "files:read_raw", "files:write"] as const).map((scope) => (
+                                <label key={scope} className="flex items-center gap-1 text-xs cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={editScopes.includes(scope)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setEditScopes([...editScopes, scope]);
+                                      } else {
+                                        setEditScopes(editScopes.filter((s) => s !== scope));
+                                      }
+                                    }}
+                                    className="rounded border-gray-300"
+                                  />
+                                  <code className="bg-gray-100 px-1 py-0.5 rounded">{scope}</code>
+                                </label>
+                              ))}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleSaveScopes(key.id)}
+                                disabled={editScopes.length === 0}
+                              >
+                                {tCommon("save")}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setEditingKeyId(null)}
+                              >
+                                {tCommon("cancel")}
+                              </Button>
+                            </div>
+                          ) : (
+                            <div
+                              className="flex flex-wrap gap-1 cursor-pointer"
+                              onClick={() => {
+                                setEditingKeyId(key.id);
+                                setEditScopes(key.scopes);
+                              }}
+                            >
+                              {key.scopes.map((scope) => (
+                                <Badge key={scope} variant="secondary" className="text-xs">{scope}</Badge>
+                              ))}
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell>
                           <span className={isExpired(key.expiresAt) ? "text-red-500" : "text-gray-500"}>

@@ -88,6 +88,10 @@ jobs:
             echo "🚀 Package version $VERSION is newer than latest image tag ${LATEST_TAG:-(none)}. Proceeding publish."
           fi
 
+      - name: Set up QEMU
+        if: steps.check-version.outputs.should_publish == 'true'
+        uses: docker/setup-qemu-action@v3
+
       - name: Setup Docker Buildx
         if: steps.check-version.outputs.should_publish == 'true'
         uses: docker/setup-buildx-action@v3
@@ -105,6 +109,7 @@ jobs:
         with:
           context: .
           file: docker/Dockerfile.app
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             boydchoi/plainvault:${{ steps.version.outputs.package_version }}

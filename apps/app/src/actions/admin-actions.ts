@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { requireSessionWithRole, getActionClientInfo } from "@/lib/auth/action-auth";
 import { listUsers, approveUser, rejectUser, updateUserRole } from "@/lib/users/user-service";
 import { listCategories, createCategory, deleteCategory } from "@/lib/categories/category-service";
-import { createApiKey, revokeApiKey, listApiKeys } from "@/lib/api-keys/api-key";
+import { createApiKey, revokeApiKey, listApiKeys, updateApiKeyScopes } from "@/lib/api-keys/api-key";
 import { getAllSettings, updateSettings, SETTING_DEFINITIONS } from "@/lib/settings/settings";
 import { formatKST } from "@/lib/time/kst";
 
@@ -206,6 +206,25 @@ export async function revokeApiKeyAction(id: string): Promise<{ success: true } 
 
     await revokeApiKey(id, auth.userId);
     return { success: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "An error occurred" };
+  }
+}
+
+export async function updateApiKeyScopesAction(id: string, scopes: string[]): Promise<{ success: true; scopes: string[] } | ActionError> {
+  try {
+    if (!isValidUuid(id)) return { error: "Invalid API key ID" };
+    const auth = await requireSessionWithRole([...ADMIN_ROLES]);
+
+    const apiKey = await prisma.apiKey.findUnique({ where: { id } });
+    if (!apiKey) return { error: "API key not found" };
+
+    const validScopes = ["files:read", "files:read_raw", "files:write"];
+    const filtered = scopes.filter((s) => validScopes.includes(s));
+    if (filtered.length === 0) return { error: "At least one scope is required" };
+
+    await updateApiKeyScopes(id, filtered);
+    return { success: true, scopes: filtered };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "An error occurred" };
   }

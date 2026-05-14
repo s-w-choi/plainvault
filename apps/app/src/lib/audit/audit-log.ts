@@ -17,6 +17,7 @@ export type AuditEventType =
   | 'file.restored'
   | 'file.deleted'
   | 'api_key.created'
+  | 'api_key.updated'
   | 'api_key.revoked'
   | 'api_key.raw_file_succeeded'
   | 'api_key.raw_file_failed';
