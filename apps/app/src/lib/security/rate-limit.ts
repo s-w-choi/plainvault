@@ -46,9 +46,9 @@ export function getDefaultRateLimitConfig(): RateLimitConfig {
   };
 }
 
-export function getClientIpKey(value: string | null): string {
+export function getClientIpKey(value: string | null): string | null {
   const clientIp = value?.split(',')[0]?.trim();
-  return clientIp && isIP(clientIp) ? clientIp : 'unknown';
+  return clientIp && isIP(clientIp) ? clientIp : null;
 }
 
 export interface RateLimitResult {
@@ -57,7 +57,11 @@ export interface RateLimitResult {
   resetAt: number;
 }
 
-export function checkRateLimit(key: string, config?: Partial<RateLimitConfig>): RateLimitResult {
+export function checkRateLimit(key: string | null, config?: Partial<RateLimitConfig>): RateLimitResult {
+  if (!key) {
+    return { allowed: true, remaining: Infinity, resetAt: 0 };
+  }
+
   const { windowMs, maxAttempts } = { ...getDefaultRateLimitConfig(), ...config };
   const now = Date.now();
 

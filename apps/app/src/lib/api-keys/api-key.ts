@@ -9,6 +9,7 @@ export interface CreateApiKeyInput {
   name: string;
   createdById: string;
   expiresInDays?: number;
+  scopes?: string[];
 }
 
 export interface ApiKeyOutput {
@@ -36,7 +37,7 @@ export async function createApiKey(input: CreateApiKeyInput): Promise<ApiKeyOutp
       status: 'ACTIVE',
       createdById: input.createdById,
       expiresAt,
-      scopesJson: JSON.stringify(['files:read_raw']),
+      scopesJson: JSON.stringify(input.scopes ?? ['files:read_raw']),
     },
   });
 
@@ -55,7 +56,7 @@ export async function createApiKey(input: CreateApiKeyInput): Promise<ApiKeyOutp
     keyPrefix: apiKey.keyPrefix,
     key,
     expiresAt: apiKey.expiresAt,
-    scopes: ['files:read_raw'],
+    scopes: input.scopes ?? ['files:read_raw'],
   };
 }
 
@@ -132,4 +133,58 @@ export async function updateLastUsed(apiKeyId: string): Promise<void> {
     where: { id: apiKeyId },
     data: { lastUsedAt: new Date() },
   });
+}
+
+export interface ListedApiKey {
+  id: string;
+  name: string;
+  keyPrefix: string;
+  status: string;
+  scopesJson: string;
+  expiresAt: Date;
+  lastUsedAt: Date | null;
+  createdAt: Date;
+  revokedAt: Date | null;
+  ownerName: string;
+  ownerEmail: string;
+}
+
+export async function listApiKeys(status?: string): Promise<ListedApiKey[]> {
+  const where = status ? { status } : {};
+
+  const apiKeys = await prisma.apiKey.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      name: true,
+      keyPrefix: true,
+      status: true,
+      scopesJson: true,
+      expiresAt: true,
+      lastUsedAt: true,
+      createdAt: true,
+      revokedAt: true,
+      createdBy: {
+        select: {
+          name: true,
+          email: true,
+        },
+      },
+    },
+  });
+
+  return apiKeys.map((apiKey) => ({
+    id: apiKey.id,
+    name: apiKey.name,
+    keyPrefix: apiKey.keyPrefix,
+    status: apiKey.status,
+    scopesJson: apiKey.scopesJson,
+    expiresAt: apiKey.expiresAt,
+    lastUsedAt: apiKey.lastUsedAt,
+    createdAt: apiKey.createdAt,
+    revokedAt: apiKey.revokedAt,
+    ownerName: apiKey.createdBy.name,
+    ownerEmail: apiKey.createdBy.email,
+  }));
 }

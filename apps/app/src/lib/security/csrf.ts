@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import type { NextRequest } from 'next/server';
+import { getSettingBool } from '@/lib/settings/settings';
 
 const CSRF_COOKIE_NAME = 'csrf_token';
 const CSRF_HEADER_NAME = 'x-csrf-token';
@@ -13,9 +14,10 @@ export function generateCsrfToken(): string {
 
 export async function setCsrfCookie(token: string): Promise<void> {
   const cookieStore = await cookies();
+  const secure = await getSettingBool('cookie_secure');
   cookieStore.set(CSRF_COOKIE_NAME, token, {
     httpOnly: false,
-    secure: false,
+    secure,
     sameSite: 'lax',
     maxAge: 60 * 60 * 24 * 7,
     path: '/',

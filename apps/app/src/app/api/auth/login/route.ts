@@ -9,7 +9,7 @@ import { logger } from "@/lib/logging/logger";
 export async function POST(request: NextRequest) {
 	try {
 		const clientIp = getClientIpKey(request.headers.get("x-forwarded-for"));
-		const rateLimitResult = checkRateLimit(`login:${clientIp}`);
+		const rateLimitResult = checkRateLimit(clientIp ? `login:${clientIp}` : null);
 		if (!rateLimitResult.allowed) {
 			return NextResponse.json(
 				{
@@ -99,9 +99,17 @@ export async function POST(request: NextRequest) {
 			);
 		}
 
-		await prisma.user.update({
+		const updatedUser = await prisma.user.update({
 			where: { id: user.id },
 			data: { lastLoginAt: new Date() },
+			select: {
+				id: true,
+				name: true,
+				email: true,
+				role: true,
+				status: true,
+				lastLoginAt: true,
+			},
 		});
 
 		await createAuditLog({
@@ -114,7 +122,10 @@ export async function POST(request: NextRequest) {
 		});
 
 		await setSessionCookie(user.id);
-		const response = NextResponse.json({ message: "Login successful" });
+		const response = NextResponse.json({
+			message: "Login successful",
+			user: updatedUser,
+		});
 
 		return response;
 	} catch (error) {

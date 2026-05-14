@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     }
 
     const clientIp = getClientIpKey(request.headers.get('x-forwarded-for'));
-    const rateLimitResult = checkRateLimit(`register:${clientIp}`, { windowMs: 3600_000, maxAttempts: 5 });
+    const rateLimitResult = checkRateLimit(clientIp ? `register:${clientIp}` : null, { windowMs: 3600_000, maxAttempts: 5 });
     if (!rateLimitResult.allowed) {
       return NextResponse.json(
         { error: { code: 'RATE_LIMITED', message: 'Too many registration attempts. Please try again later.' } },
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 
     const passwordHash = await argon2.hash(password, { type: argon2.argon2id });
 
-    await prisma.user.create({
+    const created = await prisma.user.create({
       data: {
         name,
         email,
@@ -55,7 +55,20 @@ export async function POST(request: NextRequest) {
         role: 'VIEWER',
         status: 'PENDING',
       },
+      select: { id: true },
     });
+
+    const user = await prisma.user.findUnique({
+      where: { id: created.id },
+      select: { id: true, name: true, email: true, role: true, status: true },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: { code: 'INTERNAL_ERROR', message: 'An error occurred' } },
+        { status: 500 }
+      );
+    }
 
     await createAuditLog({
       eventType: 'auth.register.requested',
@@ -65,6 +78,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       message: 'Registration request submitted. Please wait for admin approval.',
+      user,
     });
   } catch (error) {
     logger.error('Register error:', { error: error instanceof Error ? error.message : String(error) });
