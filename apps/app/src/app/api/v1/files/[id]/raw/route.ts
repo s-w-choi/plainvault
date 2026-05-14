@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { verifyApiKey, updateLastUsed } from '@/lib/api-keys/api-key';
+import { checkRateLimit, getClientIpKey } from '@/lib/security/rate-limit';
 import { decrypt } from '@/lib/crypto/encryption';
 import { formatKST } from '@/lib/time/kst';
 import { getSettingBool } from '@/lib/settings/settings';
@@ -12,6 +13,17 @@ export async function GET(
   const { id: fileId } = await params;
   const ip = request.headers.get('x-forwarded-for') || undefined;
   const userAgent = request.headers.get('user-agent') || undefined;
+
+  const clientIp = getClientIpKey(ip ?? null);
+  if (clientIp) {
+    const rateLimitResult = checkRateLimit(`api:v1:files:raw:${clientIp}`);
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        { error: { code: 'RATE_LIMITED', message: 'Too many requests' } },
+        { status: 429 }
+      );
+    }
+  }
 
   const authHeader = request.headers.get('authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
