@@ -1,13 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { AppHeader } from "@/components/app-header";
-import { Button } from "@/components/ui/button";
+import { useUser } from "@/components/providers/user-provider";
+import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { LoadingScreen } from "@/components/ui/loading-screen";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { createApiKeyAction, listApiKeysAction, revokeApiKeyAction } from "@/actions/admin-actions";
 
 interface ApiKey {
   id: string;
@@ -21,16 +26,14 @@ interface ApiKey {
   revokedAt: string | null;
 }
 
-interface UserInfo {
-  name: string;
-  email: string;
-  role: string;
-}
-
 export default function AdminApiKeysPage() {
+  const t = useTranslations("admin.apiKeys");
+  const tAuth = useTranslations("auth");
+  const tCommon = useTranslations("common");
+
   const router = useRouter();
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
-  const [user, setUser] = useState<UserInfo | null>(null);
+  const user = useUser();
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [newKey, setNewKey] = useState<{ name: string; key: string } | null>(null);
@@ -39,25 +42,30 @@ export default function AdminApiKeysPage() {
   const [newKeyExpiry, setNewKeyExpiry] = useState("");
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    fetch("/api/auth/me")
-      .then(r => r.json())
-      .then(data => {
-        if (!data.user || data.user.role !== "ADMIN") {
-          router.push("/dashboard");
-          return;
-        }
-        setUser(data.user);
-        loadKeys();
-      });
-  }, [router]);
+  const loadKeys = useCallback(async () => {
+    try {
+      const data = await listApiKeysAction();
+      if (data && "error" in data) {
+        setApiKeys([]);
+      } else {
+        setApiKeys(data.apiKeys || []);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  async function loadKeys() {
-    const res = await fetch("/api/admin/api-keys");
-    const data = await res.json();
-    setApiKeys(data.apiKeys || []);
-    setLoading(false);
-  }
+  useEffect(() => {
+    if (!user) return;
+    if (user.role !== "ADMIN") {
+      router.push("/dashboard");
+      return;
+    }
+
+    (async () => {
+      await loadKeys();
+    })();
+  }, [user, router, loadKeys]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -65,50 +73,39 @@ export default function AdminApiKeysPage() {
     setError("");
 
     try {
-      const res = await fetch("/api/admin/api-keys", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: newKeyName,
-          expiresInDays: newKeyExpiry ? parseInt(newKeyExpiry, 10) : undefined,
-        }),
-      });
+      const result = await createApiKeyAction(
+        newKeyName,
+        newKeyExpiry ? parseInt(newKeyExpiry, 10) : undefined
+      );
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error?.message || "Failed to create API key");
-        setCreating(false);
+      if (result && "error" in result) {
+        setError(result.error || tAuth("unexpectedError"));
         return;
       }
 
-      setNewKey({ name: data.apiKey.name, key: data.apiKey.key });
+      setNewKey({ name: result.apiKey.name, key: result.apiKey.key });
       setNewKeyName("");
       setNewKeyExpiry("");
       setShowCreateForm(false);
       await loadKeys();
     } catch {
-      setError("An unexpected error occurred");
+      setError(tAuth("unexpectedError"));
     } finally {
       setCreating(false);
     }
   }
 
   async function handleRevoke(keyId: string) {
-    if (!confirm("Revoke this API key? Applications using it will stop working.")) return;
+    if (!confirm(t("revokeConfirm"))) return;
 
-    const res = await fetch(`/api/admin/api-keys/${keyId}`, { method: "DELETE" });
-    if (res.ok) {
+    const result = await revokeApiKeyAction(keyId);
+    if (result && !("error" in result)) {
       await loadKeys();
     }
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <p className="text-gray-500 text-sm">Loading...</p>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!user) return null;
@@ -125,13 +122,13 @@ export default function AdminApiKeysPage() {
       <main className="max-w-6xl mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-xl font-semibold text-gray-900">API Keys</h1>
+            <h1 className="text-xl font-semibold text-gray-900">{t("title")}</h1>
             <p className="mt-1 text-sm text-gray-500">
-              Manage API keys for programmatic access
+              {t("description")}
             </p>
           </div>
           <Button onClick={() => setShowCreateForm(true)} size="sm" disabled={showCreateForm}>
-            Create API Key
+            {t("createApiKey")}
           </Button>
         </div>
 
@@ -139,29 +136,27 @@ export default function AdminApiKeysPage() {
         {showCreateForm && (
           <Card className="mb-6">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">New API Key</CardTitle>
+              <CardTitle className="text-base">{t("newApiKey")}</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleCreate} className="space-y-4">
                 {error && (
-                  <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                    {error}
-                  </div>
+                  <Alert variant="error">{error}</Alert>
                 )}
                 <div className="flex items-end gap-4">
                   <div className="space-y-1.5 flex-1">
-                    <label htmlFor="keyName" className="text-sm font-medium text-gray-700">Name</label>
+                    <label htmlFor="keyName" className="text-sm font-medium text-gray-700">{t("name")}</label>
                     <Input
                       id="keyName"
                       value={newKeyName}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewKeyName(e.target.value)}
-                      placeholder="Production API Key"
+                      placeholder={t("namePlaceholder")}
                       required
                       disabled={creating}
                     />
                   </div>
                   <div className="space-y-1.5 w-40">
-                    <label htmlFor="keyExpiry" className="text-sm font-medium text-gray-700">Expires (days, optional)</label>
+                    <label htmlFor="keyExpiry" className="text-sm font-medium text-gray-700">{t("expiresDays")}</label>
                     <Input
                       id="keyExpiry"
                       type="number"
@@ -174,10 +169,10 @@ export default function AdminApiKeysPage() {
                   </div>
                   <div className="flex gap-2">
                     <Button type="submit" disabled={creating}>
-                      {creating ? "Creating..." : "Create"}
+                      {creating ? t("creating") : t("create")}
                     </Button>
                     <Button type="button" variant="outline" onClick={() => setShowCreateForm(false)} disabled={creating}>
-                      Cancel
+                      {tCommon("cancel")}
                     </Button>
                   </div>
                 </div>
@@ -190,7 +185,7 @@ export default function AdminApiKeysPage() {
         {newKey && (
           <Card className="mb-6 border-green-200 bg-green-50">
             <CardContent className="p-6">
-              <p className="text-sm font-medium text-green-800 mb-2">API Key created. Copy it now — you cannot see it again.</p>
+              <p className="text-sm font-medium text-green-800 mb-2">{t("keyCreated")}</p>
               <div className="flex items-center gap-3">
                 <code className="flex-1 text-sm bg-white border border-green-200 rounded px-3 py-2 font-mono break-all">{newKey.key}</code>
                 <Button
@@ -198,17 +193,17 @@ export default function AdminApiKeysPage() {
                   size="sm"
                   onClick={() => {
                     navigator.clipboard.writeText(newKey.key);
-                    alert("Copied to clipboard");
+                    alert(t("copied"));
                   }}
                 >
-                  Copy
+                  {t("copy")}
                 </Button>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => setNewKey(null)}
                 >
-                  Done
+                  {t("done")}
                 </Button>
               </div>
             </CardContent>
@@ -219,7 +214,7 @@ export default function AdminApiKeysPage() {
         {activeKeys.length === 0 && revokedKeys.length === 0 && (
           <Card className="border-dashed">
             <CardContent className="p-6 text-center text-gray-500">
-              No API keys created yet. Create one to get started.
+              {t("noKeys")}
             </CardContent>
           </Card>
         )}
@@ -227,17 +222,17 @@ export default function AdminApiKeysPage() {
         {/* Active Keys */}
         {activeKeys.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-base font-medium text-gray-700 mb-3">Active Keys</h2>
+            <h2 className="text-base font-medium text-gray-700 mb-3">{t("activeKeys")}</h2>
             <Card>
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Prefix</TableHead>
-                      <TableHead>Scopes</TableHead>
-                      <TableHead>Expires</TableHead>
-                      <TableHead>Last Used</TableHead>
+                      <TableHead>{t("name")}</TableHead>
+                      <TableHead>{t("prefix")}</TableHead>
+                      <TableHead>{t("scopes")}</TableHead>
+                      <TableHead>{t("expires")}</TableHead>
+                      <TableHead>{t("lastUsed")}</TableHead>
                       <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -260,18 +255,18 @@ export default function AdminApiKeysPage() {
                             {key.expiresAt}
                           </span>
                           {isExpired(key.expiresAt) && (
-                            <Badge variant="destructive" className="ml-1 text-xs">Expired</Badge>
+                            <Badge variant="destructive" className="ml-1 text-xs">{t("expired")}</Badge>
                           )}
                         </TableCell>
-                        <TableCell className="text-gray-500 font-mono text-xs">{key.lastUsedAt ?? "Never"}</TableCell>
+                        <TableCell className="text-gray-500 font-mono text-xs">{key.lastUsedAt ?? t("never")}</TableCell>
                         <TableCell>
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
                             onClick={() => handleRevoke(key.id)}
                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
                           >
-                            Revoke
+                            {t("revoke")}
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -286,15 +281,15 @@ export default function AdminApiKeysPage() {
         {/* Revoked Keys */}
         {revokedKeys.length > 0 && (
           <div>
-            <h2 className="text-base font-medium text-gray-700 mb-3">Revoked Keys</h2>
+            <h2 className="text-base font-medium text-gray-700 mb-3">{t("revokedKeys")}</h2>
             <Card>
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Prefix</TableHead>
-                      <TableHead>Revoked At</TableHead>
+                      <TableHead>{t("name")}</TableHead>
+                      <TableHead>{t("prefix")}</TableHead>
+                      <TableHead>{t("revokedAt")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

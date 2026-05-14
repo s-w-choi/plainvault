@@ -1,14 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { AppHeader } from "@/components/app-header";
+import { useUser } from "@/components/providers/user-provider";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { LoadingScreen } from "@/components/ui/loading-screen";
 import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { getFileAction, listFilesAction, updateFileAction } from "@/actions/file-actions";
 
 interface Category {
   id: string;
@@ -25,16 +30,12 @@ interface FileDetail {
   category: { id: string; name: string; color: string } | null;
 }
 
-interface UserInfo {
-  name: string;
-  email: string;
-  role: string;
-}
-
 export default function FileEditPage() {
+  const t = useTranslations("files");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const params = useParams<{ id: string }>();
-  const [user, setUser] = useState<UserInfo | null>(null);
+  const user = useUser();
   const [file, setFile] = useState<FileDetail | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,43 +51,35 @@ export default function FileEditPage() {
   const [changeSummary, setChangeSummary] = useState("");
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/auth/me").then(r => r.json()).catch(() => null),
-      fetch(`/api/files/${params.id}`).then(r => r.json()).catch(() => null),
-      fetch("/api/files").then(r => r.json()).catch(() => null),
-    ]).then(([userData, fileData, filesData]) => {
-      if (!userData || !userData.user) {
-        router.push("/login");
-        return;
-      }
-      setUser(userData.user);
+    if (!user) return;
 
-      if (fileData.error) {
-        setError(fileData.error.message || "Failed to load file");
-      } else if (fileData.file) {
-        const f = fileData.file;
-        setFile(f);
-        setForm({
-          title: f.title,
-          actualFileName: f.actualFileName,
-          content: f.content,
-          contentType: f.contentType,
-          categoryId: f.category?.id || "",
-        });
-      }
+    Promise.all([getFileAction(params.id), listFilesAction()])
+      .then(([fileData, filesData]) => {
+        if ("error" in fileData) {
+          setError(fileData.error.message || t("failedLoad"));
+        } else if (fileData.file) {
+          const f = fileData.file as FileDetail;
+          setFile(f);
+          setForm({
+            title: f.title,
+            actualFileName: f.actualFileName,
+            content: f.content,
+            contentType: f.contentType,
+            categoryId: f.category?.id || "",
+          });
+        }
 
-      if (filesData.categories) {
-        setCategories(filesData.categories);
-      }
-
-      setLoading(false);
-    });
-  }, [router, params.id]);
+        if (!("error" in filesData) && filesData.categories) {
+          setCategories(filesData.categories as Category[]);
+        }
+      })
+      .finally(() => setLoading(false));
+  }, [user, params.id, t]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!changeSummary.trim()) {
-      setError("Change summary is required");
+      setError(t("changeSummaryRequired"));
       return;
     }
     if (!file) return;
@@ -94,33 +87,20 @@ export default function FileEditPage() {
     setSaving(true);
     setError(null);
 
-    const res = await fetch(`/api/files/${file.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, changeSummary }),
-    });
+    const res = await updateFileAction(file.id, { ...form, changeSummary });
 
-    if (res.ok) {
+    if (!("error" in res)) {
       router.push(`/files/${file.id}`);
     } else {
-      let errorMsg = "Failed to save";
-      try {
-        const data = await res.json();
-        errorMsg = data.error?.message || errorMsg;
-      } catch {
-        errorMsg = `Server error: ${res.status}`;
-      }
+      let errorMsg = t("failedSave");
+      errorMsg = res.error?.message || errorMsg;
       setError(errorMsg);
       setSaving(false);
     }
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <p className="text-gray-500 text-sm">Loading...</p>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!user || !file) return null;
@@ -132,24 +112,23 @@ export default function FileEditPage() {
       <div className="max-w-4xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <h1 className="text-xl font-semibold text-gray-900">Edit File</h1>
+          <h1 className="text-xl font-semibold text-gray-900">{t("editFile")}</h1>
         </div>
 
         <form onSubmit={handleSubmit}>
           <Card>
             <CardHeader>
-              <CardTitle>File Details</CardTitle>
+              <CardTitle>{t("fileDetails")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-600">
-                  {error}
-                </div>
+                <Alert variant="error">{error}</Alert>
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">{t("titleField")}</label>
                 <Input
+                  id="title"
                   value={form.title}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, title: e.target.value }))}
                   required
@@ -157,8 +136,9 @@ export default function FileEditPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">File Name</label>
+                <label htmlFor="actualFileName" className="block text-sm font-medium text-gray-700 mb-1">{t("fileName")}</label>
                 <Input
+                  id="actualFileName"
                   value={form.actualFileName}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, actualFileName: e.target.value }))}
                   required
@@ -166,8 +146,9 @@ export default function FileEditPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Content Type</label>
+                <label htmlFor="contentType" className="block text-sm font-medium text-gray-700 mb-1">{t("contentType")}</label>
                 <Select
+                  id="contentType"
                   value={form.contentType}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm(f => ({ ...f, contentType: e.target.value }))}
                 >
@@ -182,12 +163,13 @@ export default function FileEditPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <label htmlFor="categoryId" className="block text-sm font-medium text-gray-700 mb-1">{t("category")}</label>
                 <Select
+                  id="categoryId"
                   value={form.categoryId}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setForm(f => ({ ...f, categoryId: e.target.value }))}
                 >
-                  <option value="">No category</option>
+                  <option value="">{t("noCategory")}</option>
                   {categories.map(cat => (
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                   ))}
@@ -195,8 +177,9 @@ export default function FileEditPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
+                <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">{t("content")}</label>
                 <Textarea
+                  id="content"
                   value={form.content}
                   onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm(f => ({ ...f, content: e.target.value }))}
                   rows={15}
@@ -206,13 +189,14 @@ export default function FileEditPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Change Summary <span className="text-red-500">*</span>
+                <label htmlFor="changeSummary" className="block text-sm font-medium text-gray-700 mb-1">
+                  {t("changeSummary")} <span className="text-red-500">*</span>
                 </label>
                 <Input
+                  id="changeSummary"
                   value={changeSummary}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setChangeSummary(e.target.value)}
-                  placeholder="Describe what changed..."
+                  placeholder={t("changeSummaryPlaceholder")}
                   required
                 />
               </div>
@@ -221,10 +205,10 @@ export default function FileEditPage() {
 
           <div className="mt-4 flex items-center gap-3">
             <Button type="submit" disabled={saving}>
-              {saving ? "Saving..." : "Save Changes"}
+              {saving ? tCommon("saving") : t("saveChanges")}
             </Button>
             <Link href={`/files/${file.id}`}>
-              <Button type="button" variant="outline">Cancel</Button>
+              <Button type="button" variant="outline">{tCommon("cancel")}</Button>
             </Link>
           </div>
         </form>

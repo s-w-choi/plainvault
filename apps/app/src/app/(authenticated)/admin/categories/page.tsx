@@ -1,12 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { AppHeader } from "@/components/app-header";
+import { useUser } from "@/components/providers/user-provider";
+import { Alert } from "@/components/ui/alert";
+import { CategoryBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { LoadingScreen } from "@/components/ui/loading-screen";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { createCategoryAction, deleteCategoryAction, listCategoriesAction } from "@/actions/admin-actions";
 
 interface Category {
   id: string;
@@ -21,8 +27,12 @@ const COLOR_PRESETS = [
 ];
 
 export default function AdminCategoriesPage() {
+  const t = useTranslations("admin.categories");
+  const tCommon = useTranslations("common");
+  const tUsers = useTranslations("admin.users");
+
   const router = useRouter();
-  const [user, setUser] = useState<{ name: string; email: string; role: string } | null>(null);
+  const user = useUser();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -31,64 +41,64 @@ export default function AdminCategoriesPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    fetch("/api/auth/me")
-      .then(r => r.json())
-      .then(data => {
-        if (!data.user || data.user.role !== "ADMIN") {
-          router.push("/dashboard");
-          return;
-        }
-        setUser(data.user);
-        loadCategories();
-      });
-  }, [router]);
+  const loadCategories = useCallback(async () => {
+    try {
+      const data = await listCategoriesAction();
+      if (data && "error" in data) {
+        setCategories([]);
+      } else {
+        setCategories(data.categories || []);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  async function loadCategories() {
-    const res = await fetch("/api/admin/categories");
-    const data = await res.json();
-    setCategories(data.categories || []);
-    setLoading(false);
-  }
+  useEffect(() => {
+    if (!user) return;
+    if (user.role !== "ADMIN") {
+      router.push("/dashboard");
+      return;
+    }
+
+    (async () => {
+      await loadCategories();
+    })();
+  }, [user, router, loadCategories]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
     setSaving(true);
     setError("");
-    const res = await fetch("/api/admin/categories", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: name.trim(), color }),
-    });
-    setSaving(false);
-    if (res.ok) {
+    try {
+      const result = await createCategoryAction(name.trim(), color);
+      if (result && "error" in result) {
+        setError(result.error || t("failedCreate"));
+        return;
+      }
       setShowForm(false);
       setName("");
       setColor(COLOR_PRESETS[0]);
       loadCategories();
-    } else {
-      const data = await res.json();
-      setError(data.error?.message || "Failed to create");
+    } finally {
+      setSaving(false);
     }
   }
 
   async function handleDelete(id: string, catName: string) {
-    if (!confirm(`Delete category "${catName}"?`)) return;
-    const res = await fetch(`/api/admin/categories/${id}`, { method: "DELETE" });
-    if (res.ok) {
-      loadCategories();
-    } else {
-      const data = await res.json();
-      alert(data.error?.message || "Failed to delete");
+    if (!confirm(t("deleteConfirm", { name: catName }))) return;
+    const result = await deleteCategoryAction(id);
+    if (result && "error" in result) {
+      alert(result.error || t("failedDelete"));
+      return;
     }
+    loadCategories();
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <p className="text-gray-500 text-sm">Loading...</p>
-      </div>
+      <LoadingScreen />
     );
   }
 
@@ -100,34 +110,35 @@ export default function AdminCategoriesPage() {
 
       <main className="max-w-4xl mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-semibold text-gray-900">Categories</h1>
+          <h1 className="text-xl font-semibold text-gray-900">{t("title")}</h1>
           {!showForm && (
-            <Button onClick={() => setShowForm(true)} size="sm">New Category</Button>
+            <Button onClick={() => setShowForm(true)} size="sm">{t("newCategory")}</Button>
           )}
         </div>
 
         {showForm && (
           <Card className="mb-6">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Create Category</CardTitle>
+              <CardTitle className="text-base">{t("createCategory")}</CardTitle>
             </CardHeader>
             <CardContent>
               {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">{error}</div>
+                <Alert variant="error" className="mb-4">{error}</Alert>
               )}
               <form onSubmit={handleCreate} className="space-y-4">
                 <div className="flex items-center gap-4">
                   <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                    <label htmlFor="category-name" className="block text-sm font-medium text-gray-700 mb-1">{t("name")}</label>
                     <Input
+                      id="category-name"
                       value={name}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
-                      placeholder="e.g. Production, Development"
+                      placeholder={t("namePlaceholder")}
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
+                    <label htmlFor="category-color" className="block text-sm font-medium text-gray-700 mb-1">{t("color")}</label>
                     <div className="flex items-center gap-2">
                       <div className="flex gap-1">
                         {COLOR_PRESETS.map(c => (
@@ -141,6 +152,7 @@ export default function AdminCategoriesPage() {
                         ))}
                       </div>
                       <input
+                        id="category-color"
                         type="color"
                         value={color}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setColor(e.target.value)}
@@ -150,8 +162,8 @@ export default function AdminCategoriesPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3 pt-2">
-                  <Button type="submit" disabled={saving}>{saving ? "Creating..." : "Create"}</Button>
-                  <Button variant="outline" type="button" onClick={() => { setShowForm(false); setError(""); }}>Cancel</Button>
+                  <Button type="submit" disabled={saving}>{saving ? t("creating") : tCommon("create")}</Button>
+                  <Button variant="outline" type="button" onClick={() => { setShowForm(false); setError(""); }}>{tCommon("cancel")}</Button>
                 </div>
               </form>
             </CardContent>
@@ -162,31 +174,25 @@ export default function AdminCategoriesPage() {
           <CardContent className="p-0">
             {categories.length === 0 ? (
               <div className="p-6 text-center text-gray-500">
-                <p>No categories yet.</p>
+                <p>{tUsers("noCategories")}</p>
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Preview</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Color</TableHead>
-                    <TableHead>Files</TableHead>
+                    <TableHead>{t("preview")}</TableHead>
+                    <TableHead>{t("name")}</TableHead>
+                    <TableHead>{t("color")}</TableHead>
+                    <TableHead>{t("files")}</TableHead>
                     <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {categories.map(cat => (
-                    <TableRow key={cat.id}>
-                      <TableCell>
-                        <span
-                          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
-                          style={{ backgroundColor: cat.color + "20", color: cat.color, border: `1px solid ${cat.color}40` }}
-                        >
-                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }} />
-                          {cat.name}
-                        </span>
-                      </TableCell>
+                      <TableRow key={cat.id}>
+                        <TableCell>
+                          <CategoryBadge name={cat.name} color={cat.color} />
+                        </TableCell>
                       <TableCell className="font-medium text-gray-900">{cat.name}</TableCell>
                       <TableCell>
                         <code className="text-xs text-gray-500">{cat.color}</code>
@@ -194,12 +200,12 @@ export default function AdminCategoriesPage() {
                       <TableCell className="text-gray-500">{cat.fileCount}</TableCell>
                       <TableCell>
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
                           onClick={() => handleDelete(cat.id, cat.name)}
-                          className="text-red-600 hover:text-red-700"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
                         >
-                          Delete
+                          {tCommon("delete")}
                         </Button>
                       </TableCell>
                     </TableRow>

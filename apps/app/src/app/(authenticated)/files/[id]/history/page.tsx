@@ -1,11 +1,20 @@
 "use client";
 
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { AppHeader } from "@/components/app-header";
+import { useUser } from "@/components/providers/user-provider";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { LoadingScreen } from "@/components/ui/loading-screen";
+import {
+  getFileAction,
+  getFileRevisionDiffAction,
+  getFileRevisionsAction,
+  restoreFileRevisionAction,
+} from "@/actions/file-actions";
 
 interface Revision {
   id: string;
@@ -39,16 +48,13 @@ interface FileDetail {
   title: string;
 }
 
-interface UserInfo {
-  name: string;
-  email: string;
-  role: string;
-}
-
 export default function FileHistoryPage() {
+  const t = useTranslations("files");
+  const tCommon = useTranslations("common");
+  const tAuditLogs = useTranslations("admin.auditLogs");
   const router = useRouter();
   const params = useParams<{ id: string }>();
-  const [user, setUser] = useState<UserInfo | null>(null);
+  const user = useUser();
   const [file, setFile] = useState<FileDetail | null>(null);
   const [revisions, setRevisions] = useState<Revision[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,34 +64,37 @@ export default function FileHistoryPage() {
   const [loadingDiff, setLoadingDiff] = useState(false);
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/auth/me").then(r => r.json()).catch(() => null),
-      fetch(`/api/files/${params.id}`).then(r => r.json()).catch(() => null),
-    ]).then(([userData, fileData]) => {
-      if (!userData || !userData.user) {
-        router.push("/login");
-        return;
-      }
-      setUser(userData.user);
+    if (!user) return;
 
-      if (fileData.error) {
-        setError(fileData.error.message || "Failed to load file");
-      } else if (fileData.file) {
-        setFile(fileData.file);
-      }
+    if (user.role === "VIEWER") {
+      router.push(`/files/${params.id}`);
+      return;
+    }
 
-      setLoading(false);
-    });
-
-    fetch(`/api/files/${params.id}/revisions`)
-      .then(r => r.json())
-      .then(data => {
-        if (data.revisions) {
-          setRevisions(data.revisions);
+    getFileAction(params.id)
+      .then((fileData) => {
+        if ("error" in fileData) {
+          setError(fileData.error.message || t("failedLoad"));
+        } else if (fileData.file) {
+          setFile(fileData.file as FileDetail);
         }
       })
-      .catch(() => null);
-  }, [router, params.id]);
+      .finally(() => setLoading(false));
+
+    getFileRevisionsAction(params.id)
+      .then((data) => {
+        if ("error" in data) {
+          setError(prev => prev || data.error.message || t("failedLoad"));
+          return;
+        }
+        if (data.revisions) {
+          setRevisions(data.revisions as Revision[]);
+        }
+      })
+      .catch(() => {
+        setError(prev => prev || t("failedLoad"));
+      });
+  }, [user, router, params.id, t]);
 
   async function handleViewDiff(rev: Revision) {
     if (selectedRevision?.id === rev.id) {
@@ -98,24 +107,38 @@ export default function FileHistoryPage() {
     setDiff(null);
 
     try {
-      const res = await fetch(`/api/files/${params.id}/revisions/${rev.id}/diff`);
-      const data = await res.json();
-      if (data.diff) {
-        setDiff(data);
+      const data = await getFileRevisionDiffAction(params.id, rev.id);
+      if (!("error" in data) && data.diff) {
+        setDiff(data as DiffResult);
       }
     } catch {
-      // ignore
+      setError(t("failedLoadDiff"));
     } finally {
       setLoadingDiff(false);
     }
   }
 
+  async function handleRestore(rev: Revision) {
+    if (!confirm(t("restoreConfirm", { number: rev.revisionNumber }))) {
+      return;
+    }
+
+    try {
+      setError(null);
+      const data = await restoreFileRevisionAction(params.id, rev.id);
+      if ("error" in data) {
+        setError(data.error?.message || t("failedRestore"));
+        return;
+      }
+
+      router.refresh();
+    } catch {
+      setError(t("failedRestore"));
+    }
+  }
+
   if (loading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <p className="text-gray-500 text-sm">Loading...</p>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!user) return null;
@@ -128,7 +151,7 @@ export default function FileHistoryPage() {
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <div>
-            <h1 className="text-xl font-semibold text-gray-900">Version History</h1>
+            <h1 className="text-xl font-semibold text-gray-900">{t("versionHistory")}</h1>
             {file && (
               <p className="text-sm text-gray-500">{file.title}</p>
             )}
@@ -146,15 +169,16 @@ export default function FileHistoryPage() {
         {/* Revisions */}
         <Card>
           <CardHeader>
-            <CardTitle>Revisions ({revisions.length})</CardTitle>
+            <CardTitle>{t("revisions", { count: revisions.length })}</CardTitle>
           </CardHeader>
           <CardContent>
             {revisions.length === 0 ? (
-              <p className="text-gray-500 text-sm">No revisions yet.</p>
+              <p className="text-gray-500 text-sm">{t("noRevisions")}</p>
             ) : (
               <div className="space-y-4">
                 {revisions.map((rev, idx) => (
                   <div key={rev.id}>
+                    {/* biome-ignore lint/a11y/useSemanticElements: avoid nested buttons inside a fully clickable row */}
                     <div
                       className={`flex items-start gap-4 p-4 border rounded-lg transition-colors cursor-pointer ${
                         selectedRevision?.id === rev.id
@@ -162,6 +186,14 @@ export default function FileHistoryPage() {
                           : "border-gray-200 hover:bg-gray-50"
                       }`}
                       onClick={() => handleViewDiff(rev)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleViewDiff(rev);
+                        }
+                      }}
                     >
                       <div className="flex-shrink-0">
                         <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-semibold text-sm">
@@ -171,32 +203,46 @@ export default function FileHistoryPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-sm font-medium text-gray-900">
-                            {rev.changedBy?.name ?? "Unknown"}
+                            {rev.changedBy?.name ?? tCommon("unknown")}
                           </span>
                           <span className="text-xs text-gray-400">•</span>
                           <span className="text-xs text-gray-500">{rev.changedAt}</span>
                           {idx === 0 && (
-                            <Badge variant="secondary" className="text-xs">Latest</Badge>
+                            <Badge variant="secondary" className="text-xs">{t("latest")}</Badge>
                           )}
                         </div>
                         <p className="text-sm text-gray-600 mb-2">{rev.changeSummary}</p>
                         <div className="flex items-center gap-4 text-xs text-gray-400 font-mono">
-                          <span title="Before">← {rev.contentSha256Before?.slice(0, 12) ?? "initial"}...</span>
-                          <span title="After">→ {rev.contentSha256After.slice(0, 12)}...</span>
+                          <span title={tAuditLogs("previous")}>← {rev.contentSha256Before?.slice(0, 12) ?? t("initial")}...</span>
+                          <span title={tAuditLogs("next")}>→ {rev.contentSha256After.slice(0, 12)}...</span>
                         </div>
                       </div>
                       <div className="flex-shrink-0">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-indigo-600"
-                          onClick={(e: React.MouseEvent) => {
-                            e.stopPropagation();
-                            handleViewDiff(rev);
-                          }}
-                        >
-                          {selectedRevision?.id === rev.id ? "Hide Diff" : "View Diff"}
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          {idx !== 0 && ['ADMIN', 'DEVELOPER'].includes(user.role) && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e: React.MouseEvent) => {
+                                e.stopPropagation();
+                                handleRestore(rev);
+                              }}
+                            >
+                              {t("restore")}
+                            </Button>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                            onClick={(e: React.MouseEvent) => {
+                              e.stopPropagation();
+                              handleViewDiff(rev);
+                            }}
+                          >
+                            {selectedRevision?.id === rev.id ? t("hideDiff") : t("viewDiff")}
+                          </Button>
+                        </div>
                       </div>
                     </div>
 
@@ -205,15 +251,19 @@ export default function FileHistoryPage() {
                       <div className="mt-2 p-4 bg-gray-900 rounded-lg border border-gray-700">
                         <div className="flex items-center justify-between mb-3">
                           <span className="text-sm font-medium text-gray-300">
-                            Diff {diff?.previousRevisionNumber ? `v${diff.previousRevisionNumber} → v${diff.currentRevisionNumber}` : `v${rev.revisionNumber} (initial)`}
+                            {t("diff", {
+                              range: diff?.previousRevisionNumber
+                                ? `v${diff.previousRevisionNumber} → v${diff.currentRevisionNumber}`
+                                : `v${rev.revisionNumber} (${t("initial")})`,
+                            })}
                           </span>
-                          {loadingDiff && <span className="text-xs text-gray-500">Loading...</span>}
+                          {loadingDiff && <span className="text-xs text-gray-500">{tCommon("loading")}</span>}
                         </div>
                         {diff?.diff?.lines && (
                           <div className="font-mono text-xs overflow-x-auto">
-                            {diff.diff.lines.map((line, i) => (
+                            {diff.diff.lines.map((line) => (
                               <div
-                                key={i}
+                                key={`${line.type}:${line.oldLineNumber ?? ''}:${line.newLineNumber ?? ''}:${line.content}`}
                                 className={`px-3 py-0.5 ${
                                   line.type === "added"
                                     ? "bg-green-900/50 text-green-300"

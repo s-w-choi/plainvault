@@ -1,10 +1,16 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { AppHeader } from "@/components/app-header";
+import { useUser } from "@/components/providers/user-provider";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { LoadingScreen } from "@/components/ui/loading-screen";
+import { getSettingsAction, updateSettingsAction } from "@/actions/admin-actions";
 
 interface SettingDef {
   key: string;
@@ -15,8 +21,10 @@ interface SettingDef {
 }
 
 function SettingsContent() {
+  const t = useTranslations("admin.settings");
+
   const router = useRouter();
-  const [user, setUser] = useState<{ name: string; email: string; role: string; status: string } | null>(null);
+  const user = useUser();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [definitions, setDefinitions] = useState<SettingDef[]>([]);
@@ -24,44 +32,32 @@ function SettingsContent() {
   const [success, setSuccess] = useState("");
 
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((r) => r.json())
-      .then((data) => {
-        if (!data.user) {
-          router.push("/login");
-          return;
+    if (!user) return;
+    if (user.role !== "ADMIN") {
+      router.push("/dashboard");
+      return;
+    }
+
+    (async () => {
+      try {
+        const data = await getSettingsAction();
+        if (data && !("error" in data)) {
+          if (data?.settings) setValues(data.settings);
+          if (data?.definitions) setDefinitions(data.definitions);
         }
-        setUser(data.user);
-        if (data.user.role !== "ADMIN") {
-          router.push("/dashboard");
-          return;
-        }
-        return fetch("/api/admin/settings");
-      })
-      .then((r) => r?.json())
-      .then((data) => {
-        if (data?.settings) {
-          setValues(data.settings);
-        }
-        if (data?.definitions) {
-          setDefinitions(data.definitions);
-        }
+      } finally {
         setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [router]);
+      }
+    })();
+  }, [user, router]);
 
   async function handleSave() {
     setSaving(true);
     setSuccess("");
     try {
-      const res = await fetch("/api/admin/settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ settings: values }),
-      });
-      if (res.ok) {
-        setSuccess("Settings saved successfully.");
+      const result = await updateSettingsAction(values);
+      if (result && !("error" in result)) {
+        setSuccess(t("saved"));
       }
     } finally {
       setSaving(false);
@@ -73,11 +69,7 @@ function SettingsContent() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <p className="text-gray-500 text-sm">Loading...</p>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!user) return null;
@@ -90,13 +82,15 @@ function SettingsContent() {
         <div className="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-50 via-white to-purple-50 px-6 py-5">
           <div className="absolute top-2 right-8 w-24 h-24 bg-purple-100 rounded-full blur-3xl opacity-40" />
           <div className="relative">
-            <h1 className="text-xl font-bold text-gray-900">Settings</h1>
-            <p className="text-sm text-gray-500 mt-1">Configure application behavior and security policies.</p>
+            <h1 className="text-xl font-bold text-gray-900">{t("title")}</h1>
+            <p className="text-sm text-gray-500 mt-1">{t("description")}</p>
           </div>
         </div>
 
         {success && (
-          <div className="mb-4 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">{success}</div>
+          <Alert variant="success" className="mb-4">
+            {success}
+          </Alert>
         )}
 
         <div className="space-y-4">
@@ -115,10 +109,10 @@ function SettingsContent() {
                       checked={values[def.key] === "true"}
                       onChange={(e) => updateValue(def.key, String(e.target.checked))}
                     />
-                    <span className="text-sm text-gray-700">{values[def.key] === "true" ? "Enabled" : "Disabled"}</span>
+                    <span className="text-sm text-gray-700">{values[def.key] === "true" ? t("enabled") : t("disabled")}</span>
                   </label>
                 ) : (
-                  <input
+                  <Input
                     type="number"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     value={values[def.key] ?? def.defaultValue}
@@ -131,7 +125,7 @@ function SettingsContent() {
         </div>
 
         <div className="mt-6">
-          <Button onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Save Settings"}</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? t("saving") : t("saveSettings")}</Button>
         </div>
       </main>
     </div>
@@ -142,9 +136,7 @@ export default function SettingsPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-white flex items-center justify-center">
-          <p className="text-gray-500 text-sm">Loading...</p>
-        </div>
+        <LoadingScreen />
       }
     >
       <SettingsContent />

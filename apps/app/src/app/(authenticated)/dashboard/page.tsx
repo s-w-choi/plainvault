@@ -1,16 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AppHeader } from "@/components/app-header";
-import { Badge } from "@/components/ui/badge";
+import { Badge, CategoryBadge } from "@/components/ui/badge";
+import { LoadingScreen } from "@/components/ui/loading-screen";
+import { Alert } from "@/components/ui/alert";
+import { Select } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useUser } from "@/components/providers/user-provider";
+import { createFileAction, deleteFileAction, listFilesAction } from "@/actions/file-actions";
 
 interface Category {
   id: string;
@@ -28,18 +32,11 @@ interface FileSummary {
   category: { id: string; name: string; color: string } | null;
 }
 
-interface UserInfo {
-  name: string;
-  email: string;
-  role: string;
-}
-
 export default function DashboardPage() {
   const t = useTranslations("dashboard");
   const tCommon = useTranslations("common");
   const tNav = useTranslations("nav");
-  const router = useRouter();
-  const [user, setUser] = useState<UserInfo | null>(null);
+  const user = useUser();
   const [allFiles, setAllFiles] = useState<FileSummary[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -63,25 +60,21 @@ export default function DashboardPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/auth/me").then(r => r.json()).catch(() => null),
-      fetch("/api/files").then(r => r.json()).catch(() => null),
-    ]).then(async ([userData, filesData]) => {
-      if (!userData || !userData.user) {
-        router.push("/login");
-        return;
-      }
-      setUser(userData.user);
-      if (filesData?.files) {
-        setAllFiles(filesData.files);
-        setTotalCount(filesData.files.length);
-      }
-      if (filesData?.categories) {
-        setCategories(filesData.categories);
-      }
-      setLoading(false);
-    });
-  }, [router]);
+    if (!user) return;
+
+    listFilesAction()
+      .then((filesData) => {
+        if ("error" in filesData) return;
+        if (filesData?.files) {
+          setAllFiles(filesData.files as FileSummary[]);
+          setTotalCount((filesData.files as FileSummary[]).length);
+        }
+        if (filesData?.categories) {
+          setCategories(filesData.categories as Category[]);
+        }
+      })
+      .finally(() => setLoading(false));
+  }, [user]);
 
   const recentFiles = allFiles.slice(0, 3);
 
@@ -93,8 +86,10 @@ export default function DashboardPage() {
     return matchesSearch && matchesCategory;
   });
 
-  const canCreate = user?.role === "ADMIN" || user?.role === "DEVELOPER";
-  const isAdmin = user?.role === "ADMIN";
+  if (!user) return null;
+
+  const canCreate = user.role === "ADMIN" || user.role === "DEVELOPER";
+  const isAdmin = user.role === "ADMIN";
 
   async function handleSave() {
     if (!formData.title || !formData.actualFileName) {
@@ -105,27 +100,28 @@ export default function DashboardPage() {
     setError(null);
     const payload: Record<string, unknown> = { ...formData };
     if (!payload.categoryId) delete payload.categoryId;
-    const res = await fetch("/api/files", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+
+    const res = await createFileAction(payload as {
+      title: string;
+      actualFileName: string;
+      contentType: string;
+      content: string;
+      categoryId?: string;
     });
+
     setSaving(false);
-    if (res.ok) {
+    if (!("error" in res)) {
       setShowForm(false);
       setFormData({ title: "", actualFileName: "", contentType: "text", content: "", categoryId: "" });
-      const filesRes = await fetch("/api/files");
-      const data = await filesRes.json();
-      setAllFiles(data.files || []);
-      setTotalCount(data.files?.length || 0);
+      const filesData = await listFilesAction();
+      if (!("error" in filesData)) {
+        setAllFiles((filesData.files as FileSummary[]) || []);
+        setTotalCount(((filesData.files as FileSummary[])?.length) || 0);
+        if (filesData.categories) setCategories(filesData.categories as Category[]);
+      }
     } else {
       let errorMsg = t("failedCreateFile");
-      try {
-        const data = await res.json();
-        errorMsg = data.error?.message || errorMsg;
-      } catch {
-        errorMsg = t("serverError", { status: res.status });
-      }
+      errorMsg = res.error?.message || errorMsg;
       setError(errorMsg);
     }
   }
@@ -133,23 +129,17 @@ export default function DashboardPage() {
   async function handleDelete(fileId: string, fileTitle: string) {
     if (!confirm(t("deleteConfirm", { title: fileTitle }))) return;
     setDeletingId(fileId);
-    const res = await fetch(`/api/files/${fileId}`, { method: "DELETE" });
+    const res = await deleteFileAction(fileId);
     setDeletingId(null);
-    if (res.ok) {
+    if (!("error" in res)) {
       setAllFiles(prev => prev.filter(f => f.id !== fileId));
       setTotalCount(prev => prev - 1);
     }
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <p className="text-gray-500 text-sm">{tCommon("loading")}</p>
-      </div>
-    );
+    return <LoadingScreen message={tCommon("loading")} />;
   }
-
-  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -174,6 +164,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
                 <svg className="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <title>{t("totalFiles")}</title>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
@@ -187,6 +178,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
                 <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <title>{t("yourRole")}</title>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </div>
@@ -200,6 +192,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
                 <svg className="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <title>{t("status")}</title>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
@@ -219,6 +212,7 @@ export default function DashboardPage() {
                 <CardTitle className="text-base flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
                     <svg className="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <title>{t("administration")}</title>
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
@@ -252,6 +246,7 @@ export default function DashboardPage() {
                 <CardTitle className="text-base flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
                     <svg className="w-4 h-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <title>{t("recentFiles")}</title>
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
@@ -298,7 +293,7 @@ export default function DashboardPage() {
             <CardContent className="p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">{t("createNewFile")}</h2>
               {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">{error}</div>
+                <Alert variant="error" className="mb-4">{error}</Alert>
               )}
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -314,11 +309,10 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="new-file-content-type" className="block text-sm font-medium text-gray-700 mb-1">{t("contentType")}</label>
-                    <select
+                    <Select
                       id="new-file-content-type"
                       value={formData.contentType}
                       onChange={e => setFormData({ ...formData, contentType: e.target.value })}
-                      className="flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
                     >
                       <option value="text">Text</option>
                       <option value="markdown">Markdown</option>
@@ -327,21 +321,20 @@ export default function DashboardPage() {
                       <option value="yaml">YAML</option>
                       <option value="xml">XML</option>
                       <option value="sql">SQL</option>
-                    </select>
+                    </Select>
                   </div>
                   <div>
                     <label htmlFor="new-file-category" className="block text-sm font-medium text-gray-700 mb-1">{t("category")}</label>
-                    <select
+                    <Select
                       id="new-file-category"
                       value={formData.categoryId}
                       onChange={e => setFormData({ ...formData, categoryId: e.target.value })}
-                      className="flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
                     >
                       <option value="">{t("noCategory")}</option>
                       {categories.map(c => (
                         <option key={c.id} value={c.id}>{c.name}</option>
                       ))}
-                    </select>
+                    </Select>
                   </div>
                 </div>
                 <div>
@@ -371,6 +364,7 @@ export default function DashboardPage() {
               <CardTitle className="text-base flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
                   <svg className="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <title>{t("allFiles", { count: filteredFiles.length })}</title>
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                   </svg>
                 </div>
@@ -413,7 +407,15 @@ export default function DashboardPage() {
                       ? "text-white"
                       : "hover:opacity-80"
                   }`}
-                  style={selectedCategory === cat.id ? { backgroundColor: cat.color } : { backgroundColor: cat.color + "20", color: cat.color, border: `1px solid ${cat.color}40` }}
+                  style={
+                    selectedCategory === cat.id
+                      ? { backgroundColor: cat.color }
+                      : {
+                          backgroundColor: `${cat.color}20`,
+                          color: cat.color,
+                          border: `1px solid ${cat.color}40`,
+                        }
+                  }
                 >
                   <span className="w-2 h-2 rounded-full" aria-hidden="true" style={{ backgroundColor: selectedCategory === cat.id ? "white" : cat.color }} />
                   {cat.name}
@@ -452,13 +454,7 @@ export default function DashboardPage() {
                       <TableCell className="text-gray-500 font-mono text-xs">{file.actualFileName}</TableCell>
                       <TableCell>
                         {file.category ? (
-                          <span
-                            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
-                            style={{ backgroundColor: file.category.color + "20", color: file.category.color, border: `1px solid ${file.category.color}40` }}
-                          >
-                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: file.category.color }} />
-                            {file.category.name}
-                          </span>
+                          <CategoryBadge name={file.category.name} color={file.category.color} />
                         ) : (
                           <span className="text-gray-400 text-xs">—</span>
                         )}
@@ -469,12 +465,12 @@ export default function DashboardPage() {
                       {isAdmin && (
                         <TableCell>
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
                             aria-label={t("deleteConfirm", { title: file.title })}
                             onClick={() => handleDelete(file.id, file.title)}
                             disabled={deletingId === file.id}
-                            className="text-red-500 hover:text-red-700"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
                           >
                             {deletingId === file.id ? "..." : tCommon("delete")}
                           </Button>
