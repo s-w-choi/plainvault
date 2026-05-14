@@ -1,17 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
+import { loginAction } from "@/actions/auth-actions";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 export default function LoginPage() {
   const t = useTranslations("auth");
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -23,25 +23,21 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      const formData = new FormData();
+      formData.set("email", email);
+      formData.set("password", password);
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        if (data.error?.code === "UNAUTHORIZED" && data.error?.message === "Account not approved") {
+      const result = await loginAction(formData);
+      if (result && "error" in result) {
+        if (result.error === "Account not approved") {
           setError(t("pendingApprovalLogin"));
         } else {
-          setError(data.error?.message || t("loginFailed"));
+          setError(result.error || t("loginFailed"));
         }
         return;
       }
 
-      router.push("/dashboard");
-      router.refresh();
+      // On success, loginAction redirects server-side.
     } catch {
       setError(t("unexpectedError"));
     } finally {
@@ -66,9 +62,7 @@ export default function LoginPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                  {error}
-                </div>
+                <Alert variant="error">{error}</Alert>
               )}
 
               <div className="space-y-1.5">

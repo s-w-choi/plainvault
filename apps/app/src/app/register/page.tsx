@@ -1,13 +1,16 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { Suspense, useEffect, useState } from "react";
+import { registerAction } from "@/actions/auth-actions";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { LoadingScreen } from "@/components/ui/loading-screen";
 
 function RegisterForm() {
   const t = useTranslations("auth");
@@ -43,16 +46,14 @@ function RegisterForm() {
     }
 
     try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
-      });
+      const formData = new FormData();
+      formData.set("name", name);
+      formData.set("email", email);
+      formData.set("password", password);
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error?.message || t("registrationFailed"));
+      const result = await registerAction(formData);
+      if ("error" in result) {
+        setError(result.error || t("registrationFailed"));
         return;
       }
 
@@ -74,10 +75,10 @@ function RegisterForm() {
       <CardContent>
         {registered ? (
           <div className="space-y-4">
-            <div className="rounded-md border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
+            <Alert variant="warning">
               <p className="font-medium">{t("waitingApproval")}</p>
               <p className="mt-1">{t("registrationSubmitted")}</p>
-            </div>
+            </Alert>
             <div className="text-center text-sm text-gray-500">
               <Link href="/login" className="text-indigo-600 hover:text-indigo-700 hover:underline">
                 {t("goToLoginNow")}
@@ -87,9 +88,7 @@ function RegisterForm() {
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                {error}
-              </div>
+              <Alert variant="error">{error}</Alert>
             )}
 
             <div className="space-y-1.5">
@@ -190,11 +189,7 @@ export default function RegisterPage() {
           <Image src="/logo.png" alt="PlainVault" width={100} height={100} className="mx-auto" />
         </div>
 
-        <Suspense fallback={
-          <Card className="rounded-xl border-gray-100 shadow-xl shadow-gray-200/50">
-            <CardContent className="p-6 text-center text-gray-500 text-sm">{tCommon("loading")}</CardContent>
-          </Card>
-        }>
+        <Suspense fallback={<LoadingScreen message={tCommon("loading")} />}>
           <RegisterForm />
         </Suspense>
       </div>
