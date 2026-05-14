@@ -32,7 +32,6 @@ COPY apps/app/scripts ./apps/app/scripts
 COPY apps/app/src ./apps/app/src
 COPY apps/app/public ./apps/app/public
 COPY apps/app/next.config.ts ./apps/app/next.config.ts
-COPY apps/app/next-env.d.ts ./apps/app/next-env.d.ts
 COPY apps/app/tsconfig.json ./apps/app/tsconfig.json
 COPY tsconfig.json ./tsconfig.json
 COPY postcss.config.mjs ./postcss.config.mjs
