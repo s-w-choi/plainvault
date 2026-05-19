@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { verifyApiKey, updateLastUsed } from '@/lib/api-keys/api-key';
-import { checkRateLimit, getClientIpKey } from '@/lib/security/rate-limit';
+import { checkRateLimit, getClientIpKey, getApiRateLimitConfig } from '@/lib/security/rate-limit';
 import { decrypt } from '@/lib/crypto/encryption';
 import { formatKST } from '@/lib/time/kst';
 import { getSettingBool } from '@/lib/settings/settings';
@@ -16,12 +16,15 @@ export async function GET(
 
   const clientIp = getClientIpKey(ip ?? null);
   if (clientIp) {
-    const rateLimitResult = checkRateLimit(`api:v1:files:raw:${clientIp}`);
-    if (!rateLimitResult.allowed) {
-      return NextResponse.json(
-        { error: { code: 'RATE_LIMITED', message: 'Too many requests' } },
-        { status: 429 }
-      );
+    const rateLimitConfig = await getApiRateLimitConfig('read');
+    if (rateLimitConfig) {
+      const rateLimitResult = checkRateLimit(`api:v1:files:raw:${clientIp}`, rateLimitConfig);
+      if (!rateLimitResult.allowed) {
+        return NextResponse.json(
+          { error: { code: 'RATE_LIMITED', message: 'Too many requests' } },
+          { status: 429 }
+        );
+      }
     }
   }
 
@@ -66,7 +69,7 @@ export async function GET(
     );
   }
 
-  if (ownerRole !== 'ADMIN' && ownerRole !== 'DEVELOPER') {
+  if (ownerRole !== 'ADMIN') {
     const { createAuditLog } = await import('@/lib/audit/audit-log');
     await createAuditLog({
       eventType: 'api_key.raw_file_failed',
@@ -81,7 +84,7 @@ export async function GET(
     });
 
     return NextResponse.json(
-      { error: { code: 'FORBIDDEN', message: 'Admin or Developer role required' } },
+      { error: { code: 'FORBIDDEN', message: 'Admin role required' } },
       { status: 403 }
     );
   }

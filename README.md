@@ -36,13 +36,13 @@ All file content is encrypted with **AES-256-GCM** before being stored. Each fil
 
 | Feature                  | ADMIN | DEVELOPER | VIEWER |
 | ------------------------ | :---: | :-------: | :----: |
-| View raw content         |   ✓   |     ✓     |   —    |
+| View raw content         |   ✓   |     —     |   —    |
 | View masked content      |   ✓   |     ✓     |   ✓    |
 | Create / edit files      |   ✓   |     ✓     |   —    |
 | Delete files             |   ✓   |     —     |   —    |
 | Manage categories        |   ✓   |     —     |   —    |
 | Approve / reject users   |   ✓   |     —     |   —    |
-| Create / revoke API keys |   ✓   |     —     |   —    |
+| Create / revoke own API keys | ✓ |     ✓     |   ✓    |
 | View audit logs          |   ✓   |     —     |   —    |
 | View revision history    |   ✓   |     ✓     |   —    |
 

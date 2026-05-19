@@ -1,10 +1,10 @@
 "use server";
 
 import { prisma } from "@/lib/db";
-import { requireSessionWithRole, getActionClientInfo } from "@/lib/auth/action-auth";
+import { requireSession, requireSessionWithRole, getActionClientInfo } from "@/lib/auth/action-auth";
 import { listUsers, approveUser, rejectUser, updateUserRole } from "@/lib/users/user-service";
 import { listCategories, createCategory, deleteCategory } from "@/lib/categories/category-service";
-import { createApiKey, revokeApiKey, listApiKeys, updateApiKeyScopes } from "@/lib/api-keys/api-key";
+import { createApiKey, revokeApiKey, listApiKeys, normalizeApiKeyScopes, updateApiKeyScopes } from "@/lib/api-keys/api-key";
 import { getAllSettings, updateSettings, SETTING_DEFINITIONS } from "@/lib/settings/settings";
 import { formatKST } from "@/lib/time/kst";
 
@@ -141,9 +141,12 @@ export async function deleteCategoryAction(id: string): Promise<{ success: true 
 
 export async function listApiKeysAction(status?: string): Promise<{ apiKeys: Array<{ id: string; name: string; keyPrefix: string; status: string; scopes: string[]; createdAt: string; expiresAt: string; lastUsedAt: string | null; revokedAt: string | null }> } | ActionError> {
   try {
-    await requireSessionWithRole([...ADMIN_ROLES]);
+    const auth = await requireSession();
 
-    const apiKeys = await listApiKeys(status ?? undefined);
+    const apiKeys = await listApiKeys({
+      status: status ?? undefined,
+      createdById: auth.role === "ADMIN" ? undefined : auth.userId,
+    });
     return {
       apiKeys: apiKeys.map((k) => ({
         id: k.id,
@@ -170,15 +173,19 @@ export async function listApiKeysAction(status?: string): Promise<{ apiKeys: Arr
 
 export async function createApiKeyAction(name: string, expiresInDays?: number, scopes?: string[]): Promise<{ apiKey: { id: string; name: string; keyPrefix: string; key: string; expiresAt: string; scopes: string[] } } | ActionError> {
   try {
-    const auth = await requireSessionWithRole([...ADMIN_ROLES]);
+    const auth = await requireSession();
 
     if (!name) return { error: "Name is required" };
+
+    const normalizedScopes = normalizeApiKeyScopes(auth.role, scopes);
+    if (normalizedScopes.length === 0) return { error: "At least one valid scope is required" };
 
     const result = await createApiKey({
       name,
       createdById: auth.userId,
+      createdByRole: auth.role as "ADMIN" | "DEVELOPER" | "VIEWER",
       expiresInDays: expiresInDays != null ? Number.parseInt(String(expiresInDays), 10) : undefined,
-      scopes,
+      scopes: normalizedScopes,
     });
 
     return {
@@ -199,10 +206,13 @@ export async function createApiKeyAction(name: string, expiresInDays?: number, s
 export async function revokeApiKeyAction(id: string): Promise<{ success: true } | ActionError> {
   try {
     if (!isValidUuid(id)) return { error: "Invalid API key ID" };
-    const auth = await requireSessionWithRole([...ADMIN_ROLES]);
+    const auth = await requireSession();
 
     const apiKey = await prisma.apiKey.findUnique({ where: { id } });
     if (!apiKey) return { error: "API key not found" };
+    if (auth.role !== "ADMIN" && apiKey.createdById !== auth.userId) {
+      return { error: "FORBIDDEN: Insufficient permissions" };
+    }
 
     await revokeApiKey(id, auth.userId);
     return { success: true };
@@ -214,13 +224,15 @@ export async function revokeApiKeyAction(id: string): Promise<{ success: true } 
 export async function updateApiKeyScopesAction(id: string, scopes: string[]): Promise<{ success: true; scopes: string[] } | ActionError> {
   try {
     if (!isValidUuid(id)) return { error: "Invalid API key ID" };
-    const auth = await requireSessionWithRole([...ADMIN_ROLES]);
+    const auth = await requireSession();
 
     const apiKey = await prisma.apiKey.findUnique({ where: { id } });
     if (!apiKey) return { error: "API key not found" };
+    if (auth.role !== "ADMIN" && apiKey.createdById !== auth.userId) {
+      return { error: "FORBIDDEN: Insufficient permissions" };
+    }
 
-    const validScopes = ["files:read", "files:read_raw", "files:write"];
-    const filtered = scopes.filter((s) => validScopes.includes(s));
+    const filtered = normalizeApiKeyScopes(auth.role, scopes);
     if (filtered.length === 0) return { error: "At least one scope is required" };
 
     await updateApiKeyScopes(id, filtered);

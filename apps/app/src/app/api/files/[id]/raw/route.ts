@@ -9,7 +9,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await withAuth(request, ['ADMIN', 'DEVELOPER']);
+  const auth = await withAuth(request, ['ADMIN']);
   if ('response' in auth) return auth.response;
 
   const { id } = await params;

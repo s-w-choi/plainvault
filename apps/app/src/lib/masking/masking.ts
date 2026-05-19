@@ -1,57 +1,106 @@
+const MASK = '********';
+
 const SECRET_PATTERNS = [
-  /^(API_KEY|TOKEN|SECRET|PASSWORD|PASS|DATABASE_URL|PRIVATE_KEY|ACCESS_KEY|REFRESH_TOKEN|CLIENT_SECRET|WEBHOOK_SECRET|AWS_|AZURE_|GCP_|STRIPE_|SENDGRID_|MAILGUN_|TWILIO_)[=:].*$/im,
-  /^(openai|anthropic|google|github|gitlab|slack|jira|datadog|newrelic|sentry)[_-]?(api|key|token|secret)[=:]?.*$/im,
-  /^(bearer|token|api[_-]?key)[=:].*$/im,
-  /postgres(ql)?:\/\/[^@]+@/im,
-  /mongodb(\+srv)?:\/\/[^@]+@/im,
-  /redis:\/\/[^@]+@/im,
-  /["']?[a-z_][a-z0-9_]*(key|token|secret|password|pass|url|uri)[=:\s]+[a-zA-Z0-9_\-=\/+]{8,}/im,
+  /((?:api[_-]?key|token|secret|password|pass|credential)([=:\s]+))[a-zA-Z0-9_\-=\/+]{8,}/gi,
+  /((?:bearer|token)([=:\s]+))[a-zA-Z0-9_\-]+/gi,
+  /https?:\/\/[^:]+:[^@]+@/gi,
 ];
 
 export function maskContent(content: string, contentType: string): string {
-  if (contentType === 'env' || contentType === 'text') {
+  if (contentType.startsWith('env')) {
     return maskEnvContent(content);
+  }
+
+  if (contentType.startsWith('yaml')) {
+    return maskYamlContent(content);
+  }
+
+  if (contentType.startsWith('xml')) {
+    return maskXmlContent(content);
+  }
+
+  if (contentType.startsWith('json')) {
+    return maskJsonContent(content);
   }
 
   return maskGeneralContent(content);
 }
 
 function maskEnvContent(content: string): string {
-  const lines = content.split('\n');
-  return lines
+  return content
+    .split('\n')
     .map((line) => {
-      for (const pattern of SECRET_PATTERNS) {
-        if (pattern.test(line)) {
-          return line.replace(/([=:])\s*(.*)$/, '$1********');
-        }
+      if (/^\s*#/.test(line)) {
+        return line;
       }
 
-      if (line.match(/^[A-Z_][A-Z0-9_]*(=|:)/)) {
-        return line.replace(/([=:])\s*(.*)$/, '$1********');
-      }
-
-      return line;
+      return line.replace(/^(\s*(?:export\s+)?[^=:#\s][^=:]*\s*[=:]\s*)(.*)$/, `$1${MASK}`);
     })
     .join('\n');
+}
+
+function maskYamlContent(content: string): string {
+  return content
+    .split('\n')
+    .map((line) => {
+      if (/^\s*#/.test(line)) {
+        return line;
+      }
+
+      const match = line.match(/^(\s*(?:-\s+)?[^#\n][^:\n]*:\s+)([^#\n]+?)(\s+#.*)?$/);
+      if (!match) {
+        return line;
+      }
+
+      const [, prefix, , comment = ''] = match;
+      return `${prefix}${MASK}${comment}`;
+    })
+    .join('\n');
+}
+
+function maskXmlContent(content: string): string {
+  let masked = content.replace(/=(["'])(.*?)\1/g, `=$1${MASK}$1`);
+
+  masked = masked.replace(/>([^<]+)</g, (_match, value: string) => {
+    return value.trim().length === 0 ? `>${value}<` : `>${MASK}<`;
+  });
+
+  return masked;
+}
+
+function maskJsonContent(content: string): string {
+  try {
+    const parsed = JSON.parse(content);
+    return JSON.stringify(maskJsonValue(parsed), null, 2);
+  } catch {
+    return maskGeneralContent(content);
+  }
+}
+
+function maskJsonValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => maskJsonValue(item));
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, nestedValue]) => [key, maskJsonValue(nestedValue)])
+    );
+  }
+
+  if (value === null) {
+    return null;
+  }
+
+  return MASK;
 }
 
 function maskGeneralContent(content: string): string {
   let masked = content;
 
-  masked = masked.replace(
-    /((?:api[_-]?key|token|secret|password|pass|credential)([=:\s]+))[a-zA-Z0-9_\-=\/+]{8,}/gi,
-    '$1********'
-  );
-
-  masked = masked.replace(
-    /((?:bearer|token)([=:\s]+))[a-zA-Z0-9_\-]+/gi,
-    '$1********'
-  );
-
-  masked = masked.replace(
-    /https?:\/\/[^:]+:[^@]+@/gi,
-    'https://********:********@'
-  );
+  for (const pattern of SECRET_PATTERNS) {
+    masked = masked.replace(pattern, '$1********');
+  }
 
   return masked;
 }

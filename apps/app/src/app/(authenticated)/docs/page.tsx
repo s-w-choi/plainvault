@@ -217,14 +217,14 @@ function RolesSection() {
             </thead>
             <tbody className="text-xs">
               {[
-                [t("rolesSection.features.viewFileRaw"), "✓", "✓", "✗"],
+                [t("rolesSection.features.viewFileRaw"), "✓", "✗", "✗"],
                 [t("rolesSection.features.viewFileMasked"), "✓", "✓", "✓"],
                 [t("rolesSection.features.createFile"), "✓", "✓", "✗"],
                 [t("rolesSection.features.editFile"), "✓", "✓", "✗"],
                 [t("rolesSection.features.deleteFile"), "✓", "✗", "✗"],
                 [t("rolesSection.features.manageCategories"), "✓", "✗", "✗"],
                 [t("rolesSection.features.approveRejectUsers"), "✓", "✗", "✗"],
-                [t("rolesSection.features.createRevokeApiKeys"), "✓", "✗", "✗"],
+                [t("rolesSection.features.createRevokeApiKeys"), "✓", "✓", "✓"],
                 [t("rolesSection.features.viewAuditLogs"), "✓", "✗", "✗"],
                 [t("rolesSection.features.viewRevisionHistory"), "✓", "✓", "✗"],
               ].map(([feature, admin, dev, viewer], i) => (
@@ -488,7 +488,6 @@ function SearchSection() {
 
 function ApiKeysSection() {
   const t = useTranslations("docs");
-  const tRoles = useTranslations("roles");
 
   return (
     <div className="space-y-6">
@@ -497,9 +496,7 @@ function ApiKeysSection() {
       <Card>
         <CardHeader><CardTitle>{t("apiKeysSection.title")}</CardTitle></CardHeader>
         <CardContent className="space-y-3 text-sm text-gray-600">
-          <p>
-            {t("apiKeysSection.description.beforeRole")} {tRoles("admin").toUpperCase()} {t("apiKeysSection.description.afterRole")}
-          </p>
+          <p>{t("apiKeysSection.description")}</p>
           <ol className="list-decimal list-inside space-y-2">
             <li>
               {t("apiKeysSection.steps.step1.beforeLink")}{" "}

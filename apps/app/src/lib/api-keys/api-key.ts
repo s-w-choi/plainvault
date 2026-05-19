@@ -1,13 +1,24 @@
 import crypto from 'node:crypto';
 import { prisma } from '@/lib/db';
 import { createAuditLog } from '../audit/audit-log';
+import type { Role } from '@/lib/auth/roles';
 
 const API_KEY_PREFIX = 'secvault_';
 const API_KEY_LENGTH = 32;
+const API_KEY_SCOPES = ['files:read', 'files:write', 'files:read_raw'] as const;
+
+type ApiKeyScope = (typeof API_KEY_SCOPES)[number];
+
+const DEFAULT_SCOPES_BY_ROLE: Record<Role, ApiKeyScope[]> = {
+  VIEWER: ['files:read'],
+  DEVELOPER: ['files:read', 'files:write'],
+  ADMIN: ['files:read', 'files:write', 'files:read_raw'],
+};
 
 export interface CreateApiKeyInput {
   name: string;
   createdById: string;
+  createdByRole: Role;
   expiresInDays?: number;
   scopes?: string[];
 }
@@ -21,10 +32,42 @@ export interface ApiKeyOutput {
   scopes: string[];
 }
 
+export function getAllowedApiKeyScopesForRole(role: string): ApiKeyScope[] {
+  if (role === 'ADMIN' || role === 'DEVELOPER' || role === 'VIEWER') {
+    return [...DEFAULT_SCOPES_BY_ROLE[role]];
+  }
+
+  return [];
+}
+
+export function normalizeApiKeyScopes(role: string, scopes?: string[]): ApiKeyScope[] {
+  const allowedScopes = getAllowedApiKeyScopesForRole(role);
+
+  if (allowedScopes.length === 0) {
+    return [];
+  }
+
+  if (!scopes || scopes.length === 0) {
+    return allowedScopes;
+  }
+
+  return allowedScopes.filter((scope) => scopes.includes(scope));
+}
+
+function parseScopes(scopesJson: string): string[] {
+  try {
+    const parsed = JSON.parse(scopesJson);
+    return Array.isArray(parsed) ? parsed.filter((scope): scope is string => typeof scope === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
 export async function createApiKey(input: CreateApiKeyInput): Promise<ApiKeyOutput> {
   const key = `${API_KEY_PREFIX}${crypto.randomBytes(API_KEY_LENGTH).toString('hex')}`;
   const keyHash = crypto.createHash('sha256').update(key).digest('hex');
   const keyPrefix = key.substring(0, API_KEY_PREFIX.length + 8);
+  const scopes = normalizeApiKeyScopes(input.createdByRole, input.scopes);
 
   const expiresInDays = input.expiresInDays || 90;
   const expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000);
@@ -37,7 +80,7 @@ export async function createApiKey(input: CreateApiKeyInput): Promise<ApiKeyOutp
       status: 'ACTIVE',
       createdById: input.createdById,
       expiresAt,
-      scopesJson: JSON.stringify(input.scopes ?? ['files:read', 'files:read_raw']),
+      scopesJson: JSON.stringify(scopes),
     },
   });
 
@@ -56,7 +99,7 @@ export async function createApiKey(input: CreateApiKeyInput): Promise<ApiKeyOutp
     keyPrefix: apiKey.keyPrefix,
     key,
     expiresAt: apiKey.expiresAt,
-    scopes: input.scopes ?? ['files:read', 'files:read_raw'],
+    scopes,
   };
 }
 
@@ -92,12 +135,7 @@ export async function verifyApiKey(key: string): Promise<
     return { valid: false, error: 'API_KEY_OWNER_INACTIVE' };
   }
 
-  let scopes: string[] = [];
-  try {
-    scopes = JSON.parse(apiKey.scopesJson);
-  } catch {
-    scopes = [];
-  }
+  const scopes = parseScopes(apiKey.scopesJson);
 
   return {
     valid: true,
@@ -156,8 +194,11 @@ export interface ListedApiKey {
   ownerEmail: string;
 }
 
-export async function listApiKeys(status?: string): Promise<ListedApiKey[]> {
-  const where = status ? { status } : {};
+export async function listApiKeys(filters?: { status?: string; createdById?: string }): Promise<ListedApiKey[]> {
+  const where = {
+    ...(filters?.status ? { status: filters.status } : {}),
+    ...(filters?.createdById ? { createdById: filters.createdById } : {}),
+  };
 
   const apiKeys = await prisma.apiKey.findMany({
     where,

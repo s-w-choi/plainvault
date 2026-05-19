@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { withAuth } from '@/lib/auth/auth-handler';
-import { revokeApiKey, updateApiKeyScopes } from '@/lib/api-keys/api-key';
+import { normalizeApiKeyScopes, revokeApiKey, updateApiKeyScopes } from '@/lib/api-keys/api-key';
 import { createAuditLog } from '@/lib/audit/audit-log';
 import { logger } from '@/lib/logging/logger';
 
@@ -9,7 +9,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await withAuth(request, ['ADMIN']);
+  const auth = await withAuth(request);
   if ('response' in auth) return auth.response;
 
   try {
@@ -22,10 +22,15 @@ export async function PATCH(
         { status: 404 }
       );
     }
+    if (auth.ctx.role !== 'ADMIN' && apiKey.createdById !== auth.ctx.userId) {
+      return NextResponse.json(
+        { error: { code: 'FORBIDDEN', message: 'Insufficient permissions' } },
+        { status: 403 }
+      );
+    }
 
     const body = await request.json();
-    const validScopes = ['files:read', 'files:read_raw', 'files:write'];
-    const scopes = (body.scopes as string[]).filter((s) => validScopes.includes(s));
+    const scopes = normalizeApiKeyScopes(auth.ctx.role, body.scopes as string[]);
 
     if (scopes.length === 0) {
       return NextResponse.json(
@@ -59,7 +64,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await withAuth(request, ['ADMIN']);
+  const auth = await withAuth(request);
   if ('response' in auth) return auth.response;
 
   try {
@@ -70,6 +75,12 @@ export async function DELETE(
       return NextResponse.json(
         { error: { code: 'NOT_FOUND', message: 'API key not found' } },
         { status: 404 }
+      );
+    }
+    if (auth.ctx.role !== 'ADMIN' && apiKey.createdById !== auth.ctx.userId) {
+      return NextResponse.json(
+        { error: { code: 'FORBIDDEN', message: 'Insufficient permissions' } },
+        { status: 403 }
       );
     }
 

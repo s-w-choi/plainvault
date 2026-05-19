@@ -1,18 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { withAuth } from '@/lib/auth/auth-handler';
-import { createApiKey } from '@/lib/api-keys/api-key';
+import { createApiKey, normalizeApiKeyScopes } from '@/lib/api-keys/api-key';
 import { logger } from '@/lib/logging/logger';
 
 export async function GET(request: NextRequest) {
-  const auth = await withAuth(request, ['ADMIN']);
+  const auth = await withAuth(request);
   if ('response' in auth) return auth.response;
 
   try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
 
-    const where = status ? { status } : {};
+    const where = {
+      ...(status ? { status } : {}),
+      ...(auth.ctx.role === 'ADMIN' ? {} : { createdById: auth.ctx.userId }),
+    };
 
     const apiKeys = await prisma.apiKey.findMany({
       where,
@@ -55,11 +58,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await withAuth(request, ['ADMIN']);
+  const auth = await withAuth(request);
   if ('response' in auth) return auth.response;
 
   try {
-    const { name, expiresInDays } = await request.json();
+    const { name, expiresInDays, scopes } = await request.json();
 
     if (!name) {
       return NextResponse.json(
@@ -68,10 +71,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const normalizedScopes = normalizeApiKeyScopes(auth.ctx.role, scopes);
+    if (normalizedScopes.length === 0) {
+      return NextResponse.json(
+        { error: { code: 'VALIDATION_ERROR', message: 'At least one valid scope is required' } },
+        { status: 400 }
+      );
+    }
+
     const result = await createApiKey({
       name,
       createdById: auth.ctx.userId,
+      createdByRole: auth.ctx.role as 'ADMIN' | 'DEVELOPER' | 'VIEWER',
       expiresInDays: expiresInDays != null ? parseInt(expiresInDays, 10) : undefined,
+      scopes: normalizedScopes,
     });
 
     return NextResponse.json({

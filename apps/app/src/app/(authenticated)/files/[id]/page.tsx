@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import hljs from "highlight.js";
 import "highlight.js/styles/github.css";
+import { toast } from "sonner";
 import { AppHeader } from "@/components/app-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,11 +58,26 @@ function CurlModal({
 
   const handleCopy = useCallback(
     async (text: string, index: number) => {
-      await navigator.clipboard.writeText(text);
-      setCopiedIndex(index);
-      setTimeout(() => setCopiedIndex(null), 2000);
+      try {
+        await navigator.clipboard.writeText(text);
+        setCopiedIndex(index);
+        toast.success(t("copied"));
+        setTimeout(() => setCopiedIndex(null), 2000);
+      } catch {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+        setCopiedIndex(index);
+        toast.success(t("copied"));
+        setTimeout(() => setCopiedIndex(null), 2000);
+      }
     },
-    [],
+    [t],
   );
 
   const handleBackdropClick = useCallback(
@@ -106,14 +122,24 @@ function CurlModal({
                 <pre className="bg-gray-900 text-green-400 text-xs font-mono rounded-md p-3 pr-20 overflow-x-auto whitespace-pre-wrap break-all">
                   {cmd.curl}
                 </pre>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="absolute top-2 right-2"
+                <button
+                  type="button"
+                  className="absolute top-2 right-2 p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
                   onClick={() => handleCopy(cmd.curl, commands.indexOf(cmd))}
+                  aria-label={copiedIndex === commands.indexOf(cmd) ? t("copied") : t("copy")}
                 >
-                  {copiedIndex === commands.indexOf(cmd) ? t("copied") : t("copy")}
-                </Button>
+                  {copiedIndex === commands.indexOf(cmd) ? (
+                    <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" role="img" aria-hidden="true">
+                      <title>{t("copied")}</title>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" role="img" aria-hidden="true">
+                      <title>{t("copy")}</title>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  )}
+                </button>
               </div>
             </div>
           ))}

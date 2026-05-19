@@ -58,6 +58,41 @@ export const SETTING_DEFINITIONS: SettingDefinition[] = [
     type: 'boolean',
     defaultValue: 'false',
   },
+  {
+    key: 'rate_limit_enabled',
+    label: 'Rate Limiting',
+    description: 'Enable rate limiting for API file endpoints',
+    type: 'boolean',
+    defaultValue: 'true',
+  },
+  {
+    key: 'rate_limit_read_window_seconds',
+    label: 'Read Rate Limit Window (seconds)',
+    description: 'Time window for read API rate limiting (GET endpoints)',
+    type: 'number',
+    defaultValue: '60',
+  },
+  {
+    key: 'rate_limit_read_max',
+    label: 'Read Rate Limit Max Requests',
+    description: 'Maximum read requests allowed within the window',
+    type: 'number',
+    defaultValue: '60',
+  },
+  {
+    key: 'rate_limit_write_window_seconds',
+    label: 'Write Rate Limit Window (seconds)',
+    description: 'Time window for write API rate limiting (POST/PATCH endpoints)',
+    type: 'number',
+    defaultValue: '300',
+  },
+  {
+    key: 'rate_limit_write_max',
+    label: 'Write Rate Limit Max Requests',
+    description: 'Maximum write requests allowed within the window',
+    type: 'number',
+    defaultValue: '10',
+  },
 ];
 
 const DEFAULTS = Object.fromEntries(

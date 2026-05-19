@@ -5,6 +5,7 @@
  */
 
 import { isIP } from 'node:net';
+import { getSettingBool, getSettingNumber } from '@/lib/settings/settings';
 
 interface RateLimitEntry {
   count: number;
@@ -97,5 +98,21 @@ export function checkRateLimit(key: string | null, config?: Partial<RateLimitCon
     allowed: true,
     remaining: maxAttempts - entry.count,
     resetAt: entry.resetAt,
+  };
+}
+
+export async function getApiRateLimitConfig(
+  mode: 'read' | 'write',
+): Promise<RateLimitConfig | null> {
+  const enabled = await getSettingBool('rate_limit_enabled');
+  if (!enabled) return null;
+
+  const prefix = mode === 'read' ? 'rate_limit_read' : 'rate_limit_write';
+  const windowSeconds = await getSettingNumber(`${prefix}_window_seconds`);
+  const maxAttempts = await getSettingNumber(`${prefix}_max`);
+
+  return {
+    windowMs: windowSeconds * 1000,
+    maxAttempts,
   };
 }

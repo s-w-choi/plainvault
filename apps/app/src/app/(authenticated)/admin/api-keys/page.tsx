@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { AppHeader } from "@/components/app-header";
 import { useUser } from "@/components/providers/user-provider";
@@ -26,12 +25,17 @@ interface ApiKey {
   revokedAt: string | null;
 }
 
+function getAllowedScopes(role?: string): string[] {
+  if (role === "ADMIN") return ["files:read", "files:write", "files:read_raw"];
+  if (role === "DEVELOPER") return ["files:read", "files:write"];
+  return ["files:read"];
+}
+
 export default function AdminApiKeysPage() {
   const t = useTranslations("admin.apiKeys");
   const tAuth = useTranslations("auth");
   const tCommon = useTranslations("common");
 
-  const router = useRouter();
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const user = useUser();
   const [loading, setLoading] = useState(true);
@@ -40,10 +44,11 @@ export default function AdminApiKeysPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
   const [newKeyExpiry, setNewKeyExpiry] = useState("");
-  const [newKeyScopes, setNewKeyScopes] = useState<string[]>(["files:read", "files:read_raw"]);
+  const [newKeyScopes, setNewKeyScopes] = useState<string[]>(["files:read"]);
   const [editingKeyId, setEditingKeyId] = useState<string | null>(null);
   const [editScopes, setEditScopes] = useState<string[]>([]);
   const [error, setError] = useState("");
+  const allowedScopes = getAllowedScopes(user?.role);
 
   const loadKeys = useCallback(async () => {
     try {
@@ -60,15 +65,19 @@ export default function AdminApiKeysPage() {
 
   useEffect(() => {
     if (!user) return;
-    if (user.role !== "ADMIN") {
-      router.push("/dashboard");
-      return;
-    }
 
     (async () => {
       await loadKeys();
     })();
-  }, [user, router, loadKeys]);
+  }, [user, loadKeys]);
+
+  useEffect(() => {
+    setNewKeyScopes((current) => {
+      const next = current.filter((scope) => allowedScopes.includes(scope));
+      return next.length > 0 ? next : allowedScopes;
+    });
+    setEditScopes((current) => current.filter((scope) => allowedScopes.includes(scope)));
+  }, [allowedScopes]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -90,7 +99,7 @@ export default function AdminApiKeysPage() {
       setNewKey({ name: result.apiKey.name, key: result.apiKey.key });
       setNewKeyName("");
       setNewKeyExpiry("");
-      setNewKeyScopes(["files:read", "files:read_raw"]);
+      setNewKeyScopes(allowedScopes);
       setShowCreateForm(false);
       await loadKeys();
     } catch {
@@ -118,7 +127,7 @@ export default function AdminApiKeysPage() {
   }
 
   if (loading) {
-    return <LoadingScreen />;
+      return <LoadingScreen />;
   }
 
   if (!user) return null;
@@ -130,7 +139,7 @@ export default function AdminApiKeysPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <AppHeader user={user} activeTab="admin" />
+      <AppHeader user={user} activeTab={user.role === "ADMIN" ? "admin" : "personal"} />
 
       <main className="max-w-6xl mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-6">
@@ -192,7 +201,7 @@ export default function AdminApiKeysPage() {
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-gray-700">{t("scopes")}</label>
                   <div className="flex flex-wrap gap-3">
-                    {(["files:read", "files:read_raw", "files:write"] as const).map((scope) => (
+                    {allowedScopes.map((scope) => (
                       <label key={scope} className="flex items-center gap-1.5 text-sm text-gray-600 cursor-pointer">
                         <input
                           type="checkbox"
@@ -282,7 +291,7 @@ export default function AdminApiKeysPage() {
                         <TableCell>
                           {editingKeyId === key.id ? (
                             <div className="flex items-center gap-2">
-                              {(["files:read", "files:read_raw", "files:write"] as const).map((scope) => (
+                              {allowedScopes.map((scope) => (
                                 <label key={scope} className="flex items-center gap-1 text-xs cursor-pointer">
                                   <input
                                     type="checkbox"
@@ -299,21 +308,29 @@ export default function AdminApiKeysPage() {
                                   <code className="bg-gray-100 px-1 py-0.5 rounded">{scope}</code>
                                 </label>
                               ))}
-                              <Button
-                                variant="outline"
-                                size="sm"
+                              <button
+                                type="button"
+                                className="p-1 rounded text-green-600 hover:text-green-700 hover:bg-green-50 transition-colors"
                                 onClick={() => handleSaveScopes(key.id)}
                                 disabled={editScopes.length === 0}
+                                aria-label={tCommon("save")}
                               >
-                                {tCommon("save")}
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" role="img" aria-hidden="true">
+                                  <title>{tCommon("save")}</title>
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                              </button>
+                              <button
+                                type="button"
+                                className="p-1 rounded text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
                                 onClick={() => setEditingKeyId(null)}
+                                aria-label={tCommon("cancel")}
                               >
-                                {tCommon("cancel")}
-                              </Button>
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" role="img" aria-hidden="true">
+                                  <title>{tCommon("cancel")}</title>
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
                             </div>
                           ) : (
                             <div
@@ -339,14 +356,17 @@ export default function AdminApiKeysPage() {
                         </TableCell>
                         <TableCell className="text-gray-500 font-mono text-xs">{key.lastUsedAt ?? t("never")}</TableCell>
                         <TableCell>
-                          <Button
-                            variant="outline"
-                            size="sm"
+                          <button
+                            type="button"
+                            className="p-1.5 rounded text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors"
                             onClick={() => handleRevoke(key.id)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            aria-label={t("revoke")}
                           >
-                            {t("revoke")}
-                          </Button>
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" role="img" aria-hidden="true">
+                              <title>{t("revoke")}</title>
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
                         </TableCell>
                       </TableRow>
                     ))}

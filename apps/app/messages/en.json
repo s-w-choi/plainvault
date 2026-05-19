@@ -318,9 +318,9 @@
         "viewRevisionHistory": "View revision history"
       },
       "cards": {
-        "admin": "Admins manage access and policies. They can approve users, manage categories and API keys, and view audit logs.",
-        "developer": "Developers can create and edit files, and view raw values. They can also browse revision history.",
-        "viewer": "Viewers can browse files safely with masking. They can see masked values but can't create or edit files."
+        "admin": "Admins manage access and policies. They can approve users, manage categories, issue raw-file API keys, and view audit logs.",
+        "developer": "Developers can create and edit files, view actual values, manage their own API keys, and browse revision history.",
+        "viewer": "Viewers can browse files safely with masking and create read-only API keys, but can't create or edit files."
       }
     },
     "filesSection": {
@@ -461,10 +461,7 @@
     },
     "apiKeysSection": {
       "title": "API Keys",
-      "description": {
-        "beforeRole": "API keys are created and managed by",
-        "afterRole": "for CI/CD and other programmatic access."
-      },
+      "description": "Approved users can create and manage their own API keys for CI/CD and other programmatic access. Admins can additionally issue raw-file keys.",
       "steps": {
         "step1": {
           "beforeLink": "Go to"

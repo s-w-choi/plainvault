@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { updateLastUsed, verifyApiKey } from '@/lib/api-keys/api-key';
 import { prisma } from '@/lib/db';
 import { createFile, listFiles } from '@/lib/files/file-service';
-import { checkRateLimit, getClientIpKey } from '@/lib/security/rate-limit';
+import { checkRateLimit, getClientIpKey, getApiRateLimitConfig } from '@/lib/security/rate-limit';
 import {
   validateActualFileName,
   validateContentSize,
@@ -63,9 +63,12 @@ async function authenticate(request: NextRequest) {
 export async function GET(request: NextRequest) {
   const clientIp = getClientIpKey(request.headers.get('x-forwarded-for'));
   if (clientIp) {
-    const rateLimitResult = checkRateLimit(`api:v1:files:list:${clientIp}`);
-    if (!rateLimitResult.allowed) {
-      return errorResponse('RATE_LIMITED', 'Too many requests', 429);
+    const rateLimitConfig = await getApiRateLimitConfig('read');
+    if (rateLimitConfig) {
+      const rateLimitResult = checkRateLimit(`api:v1:files:list:${clientIp}`, rateLimitConfig);
+      if (!rateLimitResult.allowed) {
+        return errorResponse('RATE_LIMITED', 'Too many requests', 429);
+      }
     }
   }
 
@@ -94,9 +97,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const clientIp = getClientIpKey(request.headers.get('x-forwarded-for'));
   if (clientIp) {
-    const rateLimitResult = checkRateLimit(`api:v1:files:create:${clientIp}`);
-    if (!rateLimitResult.allowed) {
-      return errorResponse('RATE_LIMITED', 'Too many requests', 429);
+    const rateLimitConfig = await getApiRateLimitConfig('write');
+    if (rateLimitConfig) {
+      const rateLimitResult = checkRateLimit(`api:v1:files:create:${clientIp}`, rateLimitConfig);
+      if (!rateLimitResult.allowed) {
+        return errorResponse('RATE_LIMITED', 'Too many requests', 429);
+      }
     }
   }
 

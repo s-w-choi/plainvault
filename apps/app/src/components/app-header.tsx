@@ -151,6 +151,13 @@ export function AppHeader({ user, activeTab = "dashboard" }: AppHeaderProps) {
                   <p className="text-xs text-gray-500">{user.email}</p>
                 </div>
                 <Link
+                  href="/admin/api-keys"
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700"
+                  onClick={() => setOpen(false)}
+                >
+                  {tNav("apiKeys")}
+                </Link>
+                <Link
                   href="/personal"
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700"
                   onClick={() => setOpen(false)}

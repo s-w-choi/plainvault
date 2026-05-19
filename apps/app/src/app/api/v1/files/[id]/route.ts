@@ -4,7 +4,7 @@ import { decrypt } from '@/lib/crypto/encryption';
 import { prisma } from '@/lib/db';
 import { getFile, updateFile } from '@/lib/files/file-service';
 import { maskContent } from '@/lib/masking/masking';
-import { checkRateLimit, getClientIpKey } from '@/lib/security/rate-limit';
+import { checkRateLimit, getClientIpKey, getApiRateLimitConfig } from '@/lib/security/rate-limit';
 import { getSettingBool } from '@/lib/settings/settings';
 import { formatKST } from '@/lib/time/kst';
 import {
@@ -70,9 +70,12 @@ export async function GET(
 ) {
   const clientIp = getClientIpKey(request.headers.get('x-forwarded-for'));
   if (clientIp) {
-    const rateLimitResult = checkRateLimit(`api:v1:files:get:${clientIp}`);
-    if (!rateLimitResult.allowed) {
-      return errorResponse('RATE_LIMITED', 'Too many requests', 429);
+    const rateLimitConfig = await getApiRateLimitConfig('read');
+    if (rateLimitConfig) {
+      const rateLimitResult = checkRateLimit(`api:v1:files:get:${clientIp}`, rateLimitConfig);
+      if (!rateLimitResult.allowed) {
+        return errorResponse('RATE_LIMITED', 'Too many requests', 429);
+      }
     }
   }
 
@@ -124,9 +127,12 @@ export async function PATCH(
 ) {
   const clientIp = getClientIpKey(request.headers.get('x-forwarded-for'));
   if (clientIp) {
-    const rateLimitResult = checkRateLimit(`api:v1:files:update:${clientIp}`);
-    if (!rateLimitResult.allowed) {
-      return errorResponse('RATE_LIMITED', 'Too many requests', 429);
+    const rateLimitConfig = await getApiRateLimitConfig('write');
+    if (rateLimitConfig) {
+      const rateLimitResult = checkRateLimit(`api:v1:files:update:${clientIp}`, rateLimitConfig);
+      if (!rateLimitResult.allowed) {
+        return errorResponse('RATE_LIMITED', 'Too many requests', 429);
+      }
     }
   }
 
